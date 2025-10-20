@@ -46,7 +46,7 @@ sell_bp = Blueprint("sell", __name__)
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 app.config['SECRET_KEY'] = 'secret_izrussia_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Pytha1991@localhost/izrussia'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "postgresql://postgres:Pytha1991@localhost/izrussia")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'jwt_super_secret_key'
 
@@ -1248,6 +1248,7 @@ if __name__ == "__main__":
             print("ℹ️ Compte admin déjà existant :", admin_email)
 
     # --- Démarrage du serveur Flask + SocketIO ---
-    socketio.run(app, debug=True, host="127.0.0.1", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port)
 
 
