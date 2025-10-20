@@ -135,13 +135,13 @@ const chatBtn = document.getElementById('chatBtn');
 chatBtn.addEventListener('click', () => { window.location.href = '/inbox.html'; });
 
 // Socket.IO
-const socket = io("http://127.0.0.1:5000");
+const socket = io("https://izrussia-production.up.railway.app");
 socket.emit("join", { user_id: userId });
 
 // --- Fonction pour mettre à jour le badge ---
 async function updateBadge() {
   try {
-    const res = await fetch('http://127.0.0.1:5000/api/unread_count', {
+    const res = await fetch('https://izrussia-production.up.railway.app/api/unread_count', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if(res.ok){
@@ -165,7 +165,7 @@ if(receiverId){
 async function markMessagesRead(peerId) {
     if(!peerId) return;
     try {
-        const res = await fetch(`http://127.0.0.1:5000/api/mark_read/${peerId}`, {
+        const res = await fetch(`https://izrussia-production.up.railway.app/api/mark_read/${peerId}`, {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -197,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => fetchArticles(token));
 
 async function fetchArticles(token){
   try{
-    const res = await fetch('http://127.0.0.1:5000/api/articles', {
+    const res = await fetch('https://izrussia-production.up.railway.app/api/articles', {
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
     });
     if(!res.ok){
@@ -266,7 +266,7 @@ if(Notification.permission !== "granted") Notification.requestPermission();
 
 <script>
 function shareSite() {
-  const siteURL = "https://izrussia.com"; // 🔹 Remplace par ton vrai lien
+  const siteURL = "https://izrussia-production.up.railway.app"; // 🔹 Remplace par ton vrai lien
   if (navigator.share) {
     navigator.share({
       title: "Izrussia",

@@ -157,7 +157,7 @@
     if (!token) { alert("Session expirée. Veuillez vous reconnecter."); window.location.href = "/login.html"; return; }
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/admin/data", { headers: { "Authorization": "Bearer " + token }});
+      const res = await fetch("https://izrussia-production.up.railway.app/api/admin/data", { headers: { "Authorization": "Bearer " + token }});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Erreur de chargement des données.");
 
@@ -255,7 +255,7 @@
   async function adminUserAction(id,action){
     const token = localStorage.getItem("token");
     try{
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/user/${id}/${action}`,{
+      const res = await fetch(`https://izrussia-production.up.railway.app/api/admin/user/${id}/${action}`,{
         method:"POST", headers:{ "Authorization":"Bearer "+token }});
       const data = await res.json(); if(!res.ok) throw new Error(data.message);
       alert(data.message); location.reload();
@@ -269,7 +269,7 @@
     editableCells.forEach(cell=>payload[cell.dataset.field]=cell.textContent.trim());
     const token = localStorage.getItem("token");
     try{
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/user/${id}/update`,{
+      const res = await fetch(`https://izrussia-production.up.railway.app/api/admin/user/${id}/update`,{
         method:"POST", headers:{ "Authorization":"Bearer "+token,"Content-Type":"application/json"}, body:JSON.stringify(payload)
       });
       const data = await res.json(); if(!res.ok) throw new Error(data.message);
@@ -280,7 +280,7 @@
   async function adminArticleAction(id,action){
     const token = localStorage.getItem("token");
     try{
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/article/${id}/${action}`,{
+      const res = await fetch(`https://izrussia-production.up.railway.app/api/admin/article/${id}/${action}`,{
         method:"POST", headers:{ "Authorization":"Bearer "+token }});
       const data = await res.json(); if(!res.ok) throw new Error(data.message);
       alert(data.message); location.reload();
@@ -294,7 +294,7 @@
     editableCells.forEach(cell=>payload[cell.dataset.field]=cell.textContent.trim());
     const token = localStorage.getItem("token");
     try{
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/article/${id}/update`,{
+      const res = await fetch(`https://izrussia-production.up.railway.app/api/admin/article/${id}/update`,{
         method:"POST", headers:{ "Authorization":"Bearer "+token,"Content-Type":"application/json"}, body:JSON.stringify(payload)
       });
       const data = await res.json(); if(!res.ok) throw new Error(data.message);

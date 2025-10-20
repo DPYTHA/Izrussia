@@ -222,7 +222,7 @@ document.getElementById("sellForm").addEventListener("submit", async (e) => {
 
   try {
     // 1️⃣ Publier l'article
-    const res = await fetch("http://127.0.0.1:5000/api/sell", {
+    const res = await fetch("https://izrussia-production.up.railway.app//api/sell", {
       method: "POST",
       headers: { "Authorization": `Bearer ${token}` },
       body: formData
@@ -250,7 +250,7 @@ document.getElementById("sellForm").addEventListener("submit", async (e) => {
     // 3️⃣ Bouton paiement : appelle le backend pour créer la transaction CinetPay
     payBtn.onclick = async () => {
       try {
-        const resp = await fetch("http://127.0.0.1:5000/api/create_payment", {
+        const resp = await fetch("https://izrussia-production.up.railway.app/api/create_payment", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token}`,

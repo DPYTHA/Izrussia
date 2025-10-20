@@ -168,7 +168,7 @@ if(!token || !userRaw) {
 
 const user = JSON.parse(userRaw);
 const userId = user.id;
-const socket = io("http://127.0.0.1:5000");
+const socket = io("https://izrussia-production.up.railway.app");
 
 // Rejoindre le canal utilisateur
 socket.emit("join", { user_id: userId });
@@ -181,7 +181,7 @@ function logout() {
 // ---------------- Boîte de réception ----------------
 async function loadInbox() {
   try {
-    const res = await fetch(`http://127.0.0.1:5000/api/conversations`, {
+    const res = await fetch(`https://izrussia-production.up.railway.app/api/conversations`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if(res.status===401){ logout(); return; }
@@ -221,7 +221,7 @@ function renderInbox(conversations) {
     `;
 
     div.addEventListener('click', () => {
-      fetch(`http://127.0.0.1:5000/api/mark_read/${c.peer_id}`, {
+      fetch(`https://izrussia-production.up.railway.app/api/mark_read/${c.peer_id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -236,7 +236,7 @@ function renderInbox(conversations) {
 // ---------------- Chat direct ----------------
 async function loadMessages(rId) {
   try {
-    const res = await fetch(`http://127.0.0.1:5000/api/messages/${rId}`, {
+    const res = await fetch(`https://izrussia-production.up.railway.app/api/messages/${rId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if(res.status===401){ logout(); return; }
@@ -256,7 +256,7 @@ async function loadMessages(rId) {
 async function sendMessage() {
   const content = document.getElementById('msgInput').value.trim();
   if(!content) return;
-  const res = await fetch("http://127.0.0.1:5000/api/messages", {
+  const res = await fetch("https://izrussia-production.up.railway.app/api/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},
     body: JSON.stringify({receiver_id:receiverId, content})

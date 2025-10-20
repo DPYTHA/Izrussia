@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function loadProfileData() {
   try {
-    const res = await fetch("http://127.0.0.1:5000/api/profile", {
+    const res = await fetch("https://izrussia-production.up.railway.app/api/profile", {
       headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
     });
     if (!res.ok) throw new Error();
@@ -169,7 +169,7 @@ async function loadProfileData() {
 // ✅ Nouvelle fonction pour recalculer le solde à partir des cotisations validées
 async function updateUserBalance(userId) {
   try {
-    const res = await fetch(`http://127.0.0.1:5000/api/user_balance/${userId}`);
+    const res = await fetch(`https://izrussia-production.up.railway.app/api/user_balance/${userId}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
     document.getElementById("balanceAmount").textContent = data.balance.toLocaleString() + " FCFA";
@@ -185,7 +185,7 @@ document.getElementById("depositBtn").addEventListener("click", async () => {
   alert(`Montant envoyé: ${montant} FCFA\nFrais: ${frais} FCFA\nMontant crédité: ${montantRecu} FCFA`);
   document.getElementById("statusLabel").style.display = "inline";
   try {
-    const res = await fetch("http://127.0.0.1:5000/api/deposit", {
+    const res = await fetch("https://izrussia-production.up.railway.app/api/deposit", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

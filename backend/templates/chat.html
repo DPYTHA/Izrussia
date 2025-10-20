@@ -101,7 +101,7 @@ document.getElementById("chatWith").textContent = receiverId
   : "Discussion";
 
 // Connexion socket
-const socket = io('http://127.0.0.1:5000');
+const socket = io('https://izrussia-production.up.railway.app');
 const userId = parseInt(user.id);
 
 // Rejoindre la room
@@ -131,7 +131,7 @@ socket.on("new_message", (msg) => {
 async function loadMessages() {
   if (!receiverId) return;
   try {
-    let url = `http://127.0.0.1:5000/api/messages/${receiverId}`;
+    let url = `https://izrussia-production.up.railway.app/api/messages/${receiverId}`;
     if (articleId) url += `?article_id=${articleId}`;
     
     const res = await fetch(url, {
@@ -190,7 +190,7 @@ function sendMessage() {
 async function markRead() {
   if (!receiverId) return;
   try {
-    let url = `http://127.0.0.1:5000/api/mark_read/${receiverId}`;
+    let url = `https://izrussia-production.up.railway.app/api/mark_read/${receiverId}`;
     if (articleId) url += `?article_id=${articleId}`;
     await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
   } catch(e){ console.error(e); }

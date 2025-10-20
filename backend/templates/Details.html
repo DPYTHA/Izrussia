@@ -130,7 +130,7 @@ async function loadProduct(){
   if(!id){ alert("Aucun produit sélectionné"); return; }
 
   try{
-    const res = await fetch('http://127.0.0.1:5000/api/articles/' + id);
+    const res = await fetch('https://izrussia-production.up.railway.app/api/articles/' + id);
     if(!res.ok) throw new Error('Produit introuvable');
     const p = await res.json();
 
