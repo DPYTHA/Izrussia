@@ -1,0 +1,5 @@
+[build]
+builder = "python"
+
+[start]
+command = "bash start.sh"
