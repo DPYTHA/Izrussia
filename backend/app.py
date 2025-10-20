@@ -45,8 +45,11 @@ sell_bp = Blueprint("sell", __name__)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
-app.config['SECRET_KEY'] = 'secret_izrussia_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "postgresql://postgres:Pytha1991@localhost/izrussia")
+
+# Configuration
+# Charge les variables depuis .env ou Railway
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')  # Automatic avec Railway
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'jwt_super_secret_key'
 
