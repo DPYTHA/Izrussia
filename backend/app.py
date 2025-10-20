@@ -17,7 +17,7 @@ from sqlalchemy.dialects.postgresql import JSON
 from flask_socketio import SocketIO, emit, join_room
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-
+from config import Config  # <-- très important !
 # ---------------- CONFIG ----------------
 
 
@@ -38,7 +38,8 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 UPLOAD_FOLDER = os.path.join(STATIC_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+# Charger la configuration depuis config.py
+app.config.from_object(Config)
 
 
 sell_bp = Blueprint("sell", __name__)
