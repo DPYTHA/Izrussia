@@ -23,9 +23,7 @@ from backend.config import Config
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-# ⚙️ Dossiers
-TEMPLATES_DIR = os.path.join(BASE_DIR, '..', 'frontend', 'templates')
+TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 app = Flask(
@@ -33,6 +31,7 @@ app = Flask(
     template_folder=TEMPLATES_DIR,
     static_folder=STATIC_DIR
 )
+
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 📁 Dossier des uploads (dans backend/static/uploads)
