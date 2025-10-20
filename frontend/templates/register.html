@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Izrussia — Inscription</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#ffffff; --text:#0b0b0b; --muted:#7d7d7d; --primary:#000;
+      --radius:14px;
+    }
+    *{box-sizing:border-box;font-family:'Poppins',sans-serif}
+    body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased; display:flex; flex-direction:column; min-height:100vh;}
+    .page{padding:18px; max-width:520px; margin:0 auto; flex:1; display:flex; flex-direction:column; justify-content:center;}
+    .back{display:inline-flex;align-items:center;justify-content:center;background:#f3f3f3;width:52px;height:52px;border-radius:999px;border:none;cursor:pointer; margin-bottom:15px;}
+    h1{font-size:46px;margin:10px 0;text-align:center;font-weight:800}
+    .subtitle{text-align:center;color:var(--muted);margin-bottom:25px}
+    form{display:flex; flex-direction:column; gap:12px; padding-bottom:60px}
+    label{display:block;font-weight:700}
+    input[type="text"], input[type="email"], input[type="password"], input[type="tel"]{
+      width:100%;padding:14px;border-radius:var(--radius);border:1px solid #eee;font-size:16px;background:#fff;
+    }
+    .checkbox-row{display:flex;align-items:flex-start;gap:10px;margin-top:14px}
+    .checkbox-row input{width:18px;height:18px}
+    .actions{position:sticky; bottom:0; padding:18px; background:linear-gradient(0deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8)); box-shadow:0 -6px 24px rgba(0,0,0,0.03); display:flex; justify-content:center; z-index:10;}
+    .btn{padding:14px 40px;border-radius:28px;background:var(--primary);color:#fff;border:none;font-weight:800;cursor:pointer; min-width:220px}
+    .muted{color:var(--muted);font-size:14px}
+    .error{color:#b00020;margin-top:8px;font-weight:700}
+    .vers-login{margin-top:15px;text-align:center;font-size:14px}
+    .vers-login a{color:var(--primary); text-decoration:none; font-weight:600;}
+    @media(max-width:480px){ 
+      h1{font-size:40px} 
+      .btn{font-size:14px;padding:12px; width:100%}
+      .page{padding:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <button class="back" id="goBack" aria-label="Retour">←</button>
+    <h1>Inscription</h1>
+    <p class="subtitle">Créez votre compte Izrussia</p>
+
+    <form id="regForm" autocomplete="off" novalidate>
+      <label>Prénom
+        <input type="text" name="first_name" placeholder="Votre prénom" required>
+      </label>
+
+      <label>Nom
+        <input type="text" name="last_name" placeholder="Votre nom" required>
+      </label>
+
+      <label>Email
+        <input type="email" name="email" placeholder="votre@email.com" required>
+      </label>
+
+      <label>Téléphone
+        <input type="tel" name="phone" placeholder="+225 07 10 06 97 91">
+      </label>
+
+      <label>Mot de passe
+        <input type="password" name="password" placeholder="••••••••" required minlength="6">
+      </label>
+
+      <label>Confirmer le mot de passe
+        <input type="password" name="password_confirm" placeholder="••••••••" required>
+      </label>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="agree" name="agree" required>
+        <label for="agree" class="muted">J'accepte les <strong>conditions d'utilisation</strong> et la <strong>politique de confidentialité</strong></label>
+      </div>
+
+      <div id="error" class="error" role="alert" style="display:none"></div>
+    </form>
+
+    <div class="vers-login">
+      <a href="{{ url_for('login_page') }}">Vous avez déjà un compte ? Connectez-vous</a>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="submitBtn" class="btn">Créer mon compte</button>
+  </div>
+
+  <script>
+    const goBack = document.getElementById('goBack');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('regForm');
+    const errorBox = document.getElementById('error');
+
+    goBack.addEventListener('click', ()=>{ window.location.href = "{{ url_for('splash') }}"; });
+
+    function showError(msg){ errorBox.style.display='block'; errorBox.textContent=msg; }
+    function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
+
+    submitBtn.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      clearError();
+      const fd = new FormData(form);
+      const first_name = fd.get('first_name')?.trim();
+      const last_name = fd.get('last_name')?.trim();
+      const email = fd.get('email')?.trim();
+      const phone = fd.get('phone')?.trim();
+      const password = fd.get('password');
+      const confirm = fd.get('password_confirm');
+      const agree = form.querySelector('#agree').checked;
+
+      if(!first_name || !last_name) return showError('Prénom et nom requis.');
+      if(!email || !/^\S+@\S+\.\S+$/.test(email)) return showError('Email invalide.');
+      if(!password || password.length < 6) return showError('Mot de passe trop court (min 6 caractères).');
+      if(password !== confirm) return showError('Les mots de passe ne correspondent pas.');
+      if(!agree) return showError('Vous devez accepter les conditions.');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enregistrement...';
+
+      try {
+        const res = await fetch('http://127.0.0.1:5000/api/register', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ first_name, last_name, email, phone, password })
+        });
+        const j = await res.json();
+        if(!res.ok){ showError(j.message || 'Erreur inscription'); }
+        else {
+          alert(j.message || 'Inscription réussie');
+             window.location.href = "/login";
+;
+
+        }
+      } catch(err){
+        showError('Erreur réseau. Vérifie ton backend.');
+        console.error(err);
+      } finally {
+        submitBtn.disabled=false;
+        submitBtn.textContent='Créer mon compte';
+      }
+    });
+  </script>
+</body>
+</html>

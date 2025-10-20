@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Izrussia — Connexion</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{ --bg:#fff; --text:#0b0b0b; --muted:#7a7a7a; --primary:#000; }
+    *{box-sizing:border-box;font-family:'Poppins',sans-serif}
+    body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+    .page{max-width:520px;margin:0 auto;padding:18px}
+    .back{display:inline-flex;align-items:center;justify-content:center;background:#f3f3f3;width:52px;height:52px;border-radius:999px;border:none;cursor:pointer}
+    h1{text-align:center;font-weight:800;font-size:46px;margin-top:8px}
+    .subtitle{text-align:center;color:var(--muted);margin-bottom:18px}
+    form{padding:8px 4px 80px}
+    label{display:block;margin-top:12px;font-weight:700}
+    input[type="email"], input[type="password"]{width:100%;padding:14px;border-radius:14px;border:1px solid #eee;margin-top:8px}
+    .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+    .forgot{color:var(--muted);font-weight:700;cursor:pointer}
+    .btn{display:block;margin:28px auto 0;padding:12px 36px;border-radius:28px;background:var(--primary);color:#fff;border:none;font-weight:800;cursor:pointer;min-width:220px}
+    .muted{color:var(--muted);text-align:center;margin-top:22px}
+    .link{font-weight:800;cursor:pointer}
+    .error{color:#b00020;margin-top:8px;font-weight:700}
+    @media(max-width:480px){ h1{font-size:40px} }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <button class="back" id="goBack">←</button>
+    <h1>Connexion</h1>
+    <p class="subtitle">Connectez-vous à votre compte Izrussia</p>
+
+    <form id="loginForm" autocomplete="off" novalidate>
+      <label>Email
+        <input type="email" name="email" placeholder="votre@email.com" required>
+      </label>
+
+      <label>Mot de passe
+        <input type="password" name="password" placeholder="••••••••" required>
+      </label>
+
+      <div class="row">
+        <div></div>
+        <div id="forgot" class="forgot">Mot de passe oublié ?</div>
+      </div>
+
+      <div id="error" class="error" style="display:none"></div>
+    </form>
+
+    <p class="muted">Pas encore de compte ? <span id="toRegister" class="link">S'inscrire</span></p>
+  </div>
+
+  <button id="loginBtn" class="btn">Se connecter</button>
+
+  <script>
+    const goBack = document.getElementById('goBack');
+    const loginBtn = document.getElementById('loginBtn');
+    const form = document.getElementById('loginForm');
+    const errorBox = document.getElementById('error');
+    const toRegister = document.getElementById('toRegister');
+    const forgot = document.getElementById('forgot');
+
+    // Navigation
+    goBack.addEventListener('click', ()=>{ window.location.href = "{{ url_for('register_page') }}"; });
+    toRegister.addEventListener('click', ()=>{ window.location.href = "{{ url_for('register_page') }}"; });
+    forgot.addEventListener('click', ()=>{ alert('Fonction "Mot de passe oublié" à implémenter côté backend.'); });
+
+    function showError(msg){ errorBox.style.display='block'; errorBox.textContent=msg; }
+    function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
+
+    loginBtn.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      clearError();
+
+      const fd = new FormData(form);
+      const email = fd.get('email')?.trim();
+      const password = fd.get('password');
+
+      if(!email || !/^\S+@\S+\.\S+$/.test(email)) return showError('Email invalide.');
+      if(!password) return showError('Mot de passe requis.');
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Connexion...';
+
+      try {
+        const res = await fetch('http://127.0.0.1:5000/api/login', { 
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if(!res.ok) {
+          showError(data.message || 'Identifiants invalides');
+        } else {
+          // Stocker token JWT et infos utilisateur
+          localStorage.setItem('token', data.access_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          // ✅ Redirection selon le rôle
+  if (data.user.role === 'admin') {
+    window.location.href = '/admin';
+  } else {
+    window.location.href = '/dashboard';
+  }
+}
+
+      } catch(err) {
+        showError('Erreur réseau. Vérifie ton backend.');
+        console.error(err);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Se connecter';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Splash Logo - IZRUSSIA</title>
+  <!-- Favicon -->
+<link rel="icon" href="static/uploads/izlogo.png" type="image/png">
+<!-- Open Graph -->
+<meta property="og:title" content="IZRUSSIA">
+<meta property="og:description" content="Votre plateforme de gestion des articles, utilisateurs et cotisations.">
+<meta property="og:image" content="https://tonsite.com/static/uploads/izlogo.png">
+<meta property="og:url" content="https://tonsite.com">
+<meta property="og:type" content="website">
+
+  <style>
+    body {
+      background-color: #000; /* fond noir */
+      color: white;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: 'Poppins', sans-serif;
+      overflow: hidden;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    .logo-container img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+    }
+
+    .logo-text {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color:white;
+      text-shadow: 0 0 10px #bcbfc1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+
+ <script>
+    // Redirection vers splash.html après 5 secondes
+    document.addEventListener("DOMContentLoaded", function() {
+      setTimeout(function() {
+        window.location.href = "{{ url_for('splash') }}";
+      }, 5000);
+    });
+  </script>
+</head>
+<body>
+  <div class="logo-container">
+    <img src="{{ url_for('static', filename='uploads/izlogo.png') }}" alt="Logo IZRUSSIA">
+
+    <div class="logo-text">IZRUSSIA</div>
+  </div>
+</body>
+</html>

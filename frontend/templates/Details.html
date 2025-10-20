@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détails du produit — Izrussia</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f9fafc; --text:#0b0b0b; --muted:#7a7a7a;
+  --primary:#000; --accent:#ff6600;
+}
+* {box-sizing:border-box;font-family:'Poppins',sans-serif;margin:0;padding:0;}
+body {
+  background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+}
+
+header {
+  width:100%; background:var(--primary); color:#fff;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 20px; box-shadow:0 2px 5px rgba(0,0,0,0.2);
+}
+header img {height:38px; border-radius:6px;}
+header .username {font-weight:600; font-size:16px;}
+
+.page {
+  width:100%; max-width:520px; background:#fff;
+  border-radius:20px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  margin:20px 0; overflow:hidden; position:relative;
+}
+
+.back {
+  position:absolute; top:12px; left:12px; z-index:10;
+  background:rgba(255,255,255,0.9); border:none;
+  border-radius:10px; padding:8px 12px; font-size:18px;
+  cursor:pointer; color:#333; transition:0.3s;
+}
+.back:hover {background:#e0e0e0;}
+
+.product-slider {
+  width:100%; height:280px; display:flex;
+  overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
+}
+.slide {flex:0 0 100%; scroll-snap-align:center; position:relative;}
+.slide img {width:100%; height:280px; object-fit:cover;}
+
+.slider-nav {text-align:center; margin:8px 0;}
+.dot {
+  display:inline-block; width:10px; height:10px;
+  background:#ccc; border-radius:50%; margin:0 5px;
+  cursor:pointer; transition:0.3s;
+}
+.dot.active {background:var(--primary); width:12px; height:12px;}
+
+.sheet {padding:20px 22px;}
+.sheet h2 {font-size:22px; font-weight:700; color:var(--text); margin-bottom:6px;}
+.price {color:var(--accent); font-size:20px; font-weight:700; margin-bottom:15px;}
+.tags {margin-bottom:18px;}
+.chip {
+  background:#e7f2ff;color:#0077cc;padding:6px 12px;
+  border-radius:15px;font-size:13px;display:inline-block;margin-right:6px;
+}
+.vendor {
+  margin-bottom:20px;background:#f8f8f8;border-radius:12px;padding:12px 14px;
+}
+.vendor strong {font-size:14px;color:#666;display:block;margin-bottom:6px;}
+.vendor-row {display:flex;justify-content:space-between;align-items:center;}
+.vendor-name {font-weight:600;color:#222;}
+.vendor-meta {font-size:13px;color:#888;}
+.description {margin-bottom:20px;}
+.description h3 {font-weight:600;font-size:18px;margin-bottom:6px;}
+.description p {font-size:15px;color:#555;line-height:1.6;}
+
+.btn {
+  display:block;width:100%;padding:12px;border-radius:12px;
+  font-weight:600;font-size:15px;cursor:pointer;
+  border:2px solid var(--primary);background:#fff;color:#000;
+  transition:0.2s ease;text-align:center;margin-top:15px;
+}
+.btn:hover {background:#e7f2ff;}
+
+@media(max-width:480px){
+  .page{border-radius:12px;width:100%;}
+  .slide img{height:220px;}
+  .sheet{padding:16px;}
+  .sheet h2{font-size:20px;}
+  .price{font-size:18px;}
+  .btn{padding:10px;font-size:14px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="{{ url_for('static', filename='uploads/izlogo.png') }}" alt="Logo IZRUSSIA">
+</header>
+
+<br><br><br><br>
+
+<div class="page detail-page">
+  <button class="back" onclick="history.back()">←</button>
+
+  <div class="product-slider" id="slider"></div>
+  <div class="slider-nav" id="sliderNav"></div>
+
+  <div class="sheet">
+    <h2 id="title">Produit</h2>
+    <div id="price" class="price">0 FCFA</div>
+    <div class="tags" id="tags"></div>
+
+    <section class="vendor" id="vendorInfo"></section>
+
+    <section class="description">
+      <h3>Description & Caractéristiques</h3>
+      <p id="descriptionText">Chargement du produit...</p>
+    </section>
+
+    <button class="btn" id="chatBtn">💬 Contacter le vendeur</button>
+  </div>
+</div>
+
+<script>
+function qs(k){ 
+  return new URLSearchParams(location.search).get(k); 
+}
+
+async function loadProduct(){
+  const id = qs('id');
+  if(!id){ alert("Aucun produit sélectionné"); return; }
+
+  try{
+    const res = await fetch('http://127.0.0.1:5000/api/articles/' + id);
+    if(!res.ok) throw new Error('Produit introuvable');
+    const p = await res.json();
+
+    document.getElementById('title').textContent = p.name;
+    document.getElementById('price').textContent = (p.price || 0) + " FCFA";
+    document.getElementById('descriptionText').textContent = p.description || "Aucune description disponible";
+
+    document.getElementById('tags').innerHTML = `
+      <span class="chip">${p.category || "Autre"}</span>
+      <span class="chip">${p.condition || "Neuf"}</span>
+    `;
+
+    // Section vendeur
+   // Si ton API renvoie le vendeur sous 'user_id' et 'user_name'
+// ✅ Correction : on prend le vendeur directement comme il est renvoyé par l’API Flask
+const vendor = p.vendor || {};
+
+
+    document.getElementById('vendorInfo').innerHTML = `
+      <strong>Vendeur</strong>
+      <div class="vendor-row">
+        <div class="vendor-name">${vendor.name || "Non spécifié"}</div>
+        
+      </div>
+    `;
+
+    // Bouton de chat interne
+    const chatBtn = document.getElementById('chatBtn');
+    chatBtn.addEventListener('click', () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert("Veuillez vous connecter pour discuter avec le vendeur.");
+    window.location.href = "/login";
+    return;
+  }
+  if (vendor.id) {
+  const image = encodeURIComponent(p.images && p.images.length ? p.images[0] : "/static/images/default.png");
+  window.location.href = `/chat.html?receiver=${vendor.id}&article=${p.id}&image=${image}`;
+}
+ else {
+    alert("Informations du vendeur introuvables.");
+  }
+});
+
+
+    // Galerie d’images
+    const slider = document.getElementById('slider');
+    const nav = document.getElementById('sliderNav');
+    slider.innerHTML = '';
+    nav.innerHTML = '';
+
+    const images = p.images && p.images.length ? p.images : ["/static/images/default.png"];
+    images.forEach((img,i)=>{
+      slider.innerHTML += `<div class="slide"><img src="${img}" alt="Image ${i+1}"></div>`;
+      nav.innerHTML += `<span class="dot ${i===0?'active':''}" data-index="${i}"></span>`;
+    });
+
+    const dots = document.querySelectorAll('.dot');
+    const slides = document.querySelectorAll('.slide');
+    dots.forEach(dot=>{
+      dot.addEventListener('click', e=>{
+        const idx = e.target.dataset.index;
+        slider.scrollTo({left:slides[idx].offsetLeft, behavior:'smooth'});
+      });
+    });
+
+    slider.addEventListener('scroll', ()=>{
+      const index = Math.round(slider.scrollLeft/slider.offsetWidth);
+      dots.forEach((d,i)=>d.classList.toggle('active', i===index));
+    });
+
+  } catch(err){ 
+    console.error(err); 
+    alert("Erreur lors du chargement du produit"); 
+  }
+}
+
+loadProduct();
+</script>
+</body>
+</html>

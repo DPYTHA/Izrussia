@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin · IZRUSSIA — Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root{--accent:#0d6efd}
+    body{background:#f4f6fb}
+    .sidebar{width:260px;min-height:100vh;background:#fff;border-right:1px solid #e6e9ef}
+    .sidebar .brand{padding:20px;border-bottom:1px solid #eee}
+    .brand img{width:38px;height:38px;border-radius:8px;margin-right:10px}
+    .card-stat{border-radius:12px;box-shadow:0 6px 18px rgba(13,110,253,0.06)}
+    .thumb{width:60px;height:60px;object-fit:cover;border-radius:8px}
+    .table-actions button{margin-right:6px}
+    .small-muted{font-size:12px;color:#6c757d}
+    .topbar{height:64px;background:#fff;border-bottom:1px solid #e6e9ef;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+    .main{padding:24px}
+    .editable{outline:none;}
+    @media (max-width:992px){.sidebar{display:none}}
+    .carousel-inner img{border-radius:8px;}
+  </style>
+</head>
+<body>
+  <div class="d-flex">
+    <!-- SIDEBAR -->
+    <aside class="sidebar p-0">
+      <div class="brand d-flex align-items-center">
+        <img src="static/uploads/izlogo.png" alt="Logo IZRUSSIA">
+        <div>
+          <strong>IZRUSSIA</strong><br>
+          <small class="small-muted">Admin dashboard</small>
+        </div>
+      </div>
+      <nav class="nav flex-column p-3">
+        <a class="nav-link active" href="#overview"><i class="fa fa-home me-2"></i> Aperçu</a>
+        <a class="nav-link" href="#users"><i class="fa fa-users me-2"></i> Utilisateurs</a>
+        <a class="nav-link" href="#articles"><i class="fa fa-box-open me-2"></i> Articles</a>
+        <a class="nav-link" href="#cotisations"><i class="fa fa-coins me-2"></i> Cotisations</a>
+        <a class="nav-link text-danger" href="/logout"><i class="fa fa-sign-out-alt me-2"></i> Déconnexion</a>
+      </nav>
+      <div class="p-3 mt-auto small-muted">
+        <div>Serveur: localhost</div>
+        <div id="adminName">Admin: —</div>
+        <div style="margin-top:6px" id="updateTime">Dernière mise à jour: —</div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="flex-fill">
+      <header class="topbar">
+        <div class="d-flex align-items-center">
+          <button class="btn btn-sm btn-outline-secondary d-lg-none me-2" id="toggleSidebar"><i class="fa fa-bars"></i></button>
+          <h5 class="mb-0">Tableau de bord</h5>
+          <small class="ms-3 small-muted" id="greeting">Bonjour, Admin</small>
+        </div>
+        <div class="d-flex align-items-center">
+          <div class="me-3 text-end small-muted">
+            <div id="userCount" style="font-weight:700">0 utilisateurs</div>
+            <div class="small-muted">Inscrits</div>
+          </div>
+          <img src="static/uploads/izlogo.png" alt="Logo IZRUSSIA" width="38" height="38" style="border-radius:8px;">
+        </div>
+      </header>
+
+      <main class="main">
+        <!-- STATS -->
+        <section id="overview" class="mb-4">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <div class="card p-3 card-stat text-center">
+                <div class="small-muted">Utilisateurs inscrits</div>
+                <h3 id="totalUsers">0</h3>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="card p-3 card-stat text-center">
+                <div class="small-muted">Articles en vente</div>
+                <h3 id="totalArticles">0</h3>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="card p-3 card-stat text-center">
+                <div class="small-muted">Cotisations totales</div>
+                <h3 id="totalCotisations">0 FCFA</h3>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- USERS -->
+        <section id="users" class="mb-4">
+          <div class="card p-3">
+            <h5 class="mb-3">Utilisateurs</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Solde</th><th>Rôle</th><th>Date</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersBody">
+                  <tr><td colspan="8" class="text-center small-muted">Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ARTICLES -->
+        <section id="articles" class="mb-4">
+          <div class="card p-3">
+            <h5 class="mb-3">Articles</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Images</th><th>Titre</th><th>Description</th><th>Prix</th>
+                    <th>Catégorie</th><th>Vendeur</th><th>Statut</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="articlesBody">
+                  <tr><td colspan="9" class="text-center small-muted">Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- COTISATIONS -->
+        <section id="cotisations" class="mb-4">
+          <div class="card p-3">
+            <h5 class="mb-3">Cotisations</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr><th>#</th><th>Utilisateur</th><th>Montant envoyé</th><th>Montant reçu</th><th>Statut</th><th>Date</th></tr>
+                </thead>
+                <tbody id="cotisationsBody">
+                  <tr><td colspan="6" class="text-center small-muted">Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const token = localStorage.getItem("token");
+    if (!token) { alert("Session expirée. Veuillez vous reconnecter."); window.location.href = "/login.html"; return; }
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/admin/data", { headers: { "Authorization": "Bearer " + token }});
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Erreur de chargement des données.");
+
+      // Admin info
+      document.getElementById("adminName").textContent = "Admin: " + data.admin_name;
+      document.getElementById("greeting").textContent = "Bonjour, " + data.admin_name;
+      document.getElementById("updateTime").textContent = "Dernière mise à jour: " + new Date().toLocaleString();
+
+      // Stats
+      document.getElementById("totalUsers").textContent = data.users.length;
+      document.getElementById("totalArticles").textContent = data.articles.length;
+      document.getElementById("totalCotisations").textContent = data.cotisations.reduce((a,c)=>a+(c.montant_recu||0),0).toLocaleString()+" FCFA";
+      document.getElementById("userCount").textContent = data.users.length+" utilisateurs";
+
+      // USERS TABLE
+      const usersBody = document.getElementById("usersBody");
+      usersBody.innerHTML = "";
+      data.users.forEach((u,i)=>{
+        usersBody.innerHTML += `
+        <tr data-id="${u.id}">
+          <td>${i+1}</td>
+          <td contenteditable="true" class="editable" data-field="first_name">${u.first_name}</td>
+          <td contenteditable="true" class="editable" data-field="email">${u.email}</td>
+          <td contenteditable="true" class="editable" data-field="phone">${u.phone||'—'}</td>
+          <td>${u.balance||0}</td>
+          <td>${u.role||'user'}</td>
+          <td>${u.created_at||'-'}</td>
+          <td>
+            ${u.is_active
+              ? `<button class='btn btn-sm btn-warning mb-1' onclick="adminUserAction(${u.id}, 'deactivate')">Désactiver</button>`
+              : `<button class='btn btn-sm btn-success mb-1' onclick="adminUserAction(${u.id}, 'activate')">Activer</button>`}
+            <button class='btn btn-sm btn-primary mb-1' onclick="saveUser(${u.id})">Enregistrer</button>
+            <button class='btn btn-sm btn-danger mb-1' onclick="confirmDeleteUser(${u.id}, '${u.email}')">Supprimer</button>
+          </td>
+        </tr>`;
+      });
+
+      // ARTICLES TABLE
+      const articlesBody = document.getElementById("articlesBody");
+      articlesBody.innerHTML = "";
+      data.articles.forEach((a,i)=>{
+        let carouselId = `carousel${a.id}`;
+        let carouselInner = (a.photos||[]).map((p,idx)=>`
+          <div class="carousel-item ${idx===0?'active':''}">
+            <img src="static/uploads/${p}" class="d-block w-100" style="height:80px; object-fit:cover;">
+          </div>`).join("");
+        let carouselHtml = `<div id="${carouselId}" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner">${carouselInner}</div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+          </button>
+        </div>`;
+
+        articlesBody.innerHTML += `
+        <tr data-id="${a.id}">
+          <td>${i+1}</td>
+          <td>${carouselHtml}</td>
+          <td contenteditable="true" class="editable" data-field="title">${a.title}</td>
+          <td contenteditable="true" class="editable" data-field="description">${a.description||'-'}</td>
+          <td contenteditable="true" class="editable" data-field="price">${a.price||0}</td>
+          <td contenteditable="true" class="editable" data-field="category">${a.category||'-'}</td>
+          <td>${a.user_name||'-'}</td>
+          <td>${a.status||'-'}</td>
+          <td>
+            ${a.status!=='approved'?`<button class='btn btn-sm btn-success mb-1' onclick="adminArticleAction(${a.id},'approve')">Approuver</button>`:''}
+            ${a.status!=='rejected'?`<button class='btn btn-sm btn-danger mb-1' onclick="adminArticleAction(${a.id},'reject')">Rejeter</button>`:''}
+            <button class='btn btn-sm btn-primary mb-1' onclick="saveArticle(${a.id})">Enregistrer</button>
+          </td>
+        </tr>`;
+      });
+
+      // COTISATIONS TABLE
+      const cotBody = document.getElementById("cotisationsBody");
+      cotBody.innerHTML = "";
+     data.cotisations.forEach((c, i) => {
+    cotBody.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${c.user_name || '-'}</td>
+        <td>${c.montant_envoye || 0}</td>
+        <td>${c.montant_recu || 0}</td>
+        <td>${c.statut || '-'}</td>
+        <td>${c.date_cotisation || '-'}</td>
+      </tr>`;
+
+
+      });
+
+    } catch(err){ alert("Erreur : "+err.message); console.error(err); }
+  });
+
+  async function adminUserAction(id,action){
+    const token = localStorage.getItem("token");
+    try{
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/user/${id}/${action}`,{
+        method:"POST", headers:{ "Authorization":"Bearer "+token }});
+      const data = await res.json(); if(!res.ok) throw new Error(data.message);
+      alert(data.message); location.reload();
+    }catch(e){ alert("Erreur : "+e.message); }
+  }
+
+  async function saveUser(id){
+    const row = document.querySelector(`tr[data-id='${id}']`);
+    const editableCells = row.querySelectorAll(".editable");
+    let payload={};
+    editableCells.forEach(cell=>payload[cell.dataset.field]=cell.textContent.trim());
+    const token = localStorage.getItem("token");
+    try{
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/user/${id}/update`,{
+        method:"POST", headers:{ "Authorization":"Bearer "+token,"Content-Type":"application/json"}, body:JSON.stringify(payload)
+      });
+      const data = await res.json(); if(!res.ok) throw new Error(data.message);
+      alert("Utilisateur mis à jour !"); location.reload();
+    }catch(e){ alert("Erreur : "+e.message); }
+  }
+
+  async function adminArticleAction(id,action){
+    const token = localStorage.getItem("token");
+    try{
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/article/${id}/${action}`,{
+        method:"POST", headers:{ "Authorization":"Bearer "+token }});
+      const data = await res.json(); if(!res.ok) throw new Error(data.message);
+      alert(data.message); location.reload();
+    }catch(e){ alert("Erreur : "+e.message); }
+  }
+
+  async function saveArticle(id){
+    const row = document.querySelector(`tr[data-id='${id}']`);
+    const editableCells = row.querySelectorAll(".editable");
+    let payload={};
+    editableCells.forEach(cell=>payload[cell.dataset.field]=cell.textContent.trim());
+    const token = localStorage.getItem("token");
+    try{
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/article/${id}/update`,{
+        method:"POST", headers:{ "Authorization":"Bearer "+token,"Content-Type":"application/json"}, body:JSON.stringify(payload)
+      });
+      const data = await res.json(); if(!res.ok) throw new Error(data.message);
+      alert("Article mis à jour !"); location.reload();
+    }catch(e){ alert("Erreur : "+e.message); }
+  }
+
+  function confirmDeleteUser(id,email){ if(confirm(`Supprimer ${email} ?`)) adminUserAction(id,"delete"); }
+
+  document.getElementById("toggleSidebar")?.addEventListener("click",()=>{
+    const sb=document.querySelector(".sidebar"); sb.style.display=sb.style.display==="none"?"block":"none";
+  });
+  </script>
+</body>
+</html>

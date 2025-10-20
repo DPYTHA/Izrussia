@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil — Izrussia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Poppins",sans-serif}
+    body{background:#f5f7fa;color:#222;min-height:100vh;display:flex;flex-direction:column;}
+    header{background:#000;color:#fff;padding:15px 25px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 8px rgba(0,0,0,0.3);}
+    header img{height:45px;}
+    header .username{font-weight:600;font-size:16px;}
+    .container{display:flex;flex-wrap:wrap;margin:20px;gap:20px;}
+    .card{background:#fff;border-radius:15px;padding:20px;box-shadow:0 3px 10px rgba(0,0,0,0.1);}
+    .main{flex:2;min-width:300px;}
+    .sidebar{flex:1;min-width:250px;}
+    h2{font-size:20px;margin-bottom:12px;color:#444;}
+    .section{margin-bottom:25px;}
+    .article{display:flex;align-items:center;gap:12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;padding:10px;}
+    .article img{width:70px;height:70px;border-radius:10px;object-fit:cover;}
+    .valid{border-color:#00a65a;}
+    .invalid{border-color:#ff4444;}
+    .balance-box{background:linear-gradient(45deg,#007bff,#00a8ff);color:#fff;padding:20px;border-radius:15px;margin-bottom:15px;text-align:center;}
+    .balance-box span{font-size:22px;font-weight:700;}
+    .btn{padding:10px 15px;border:none;border-radius:10px;cursor:pointer;font-weight:600;transition:.3s;}
+    .btn.primary{background:#000;color:#fff;}
+    .btn.primary:hover{background:#333;}
+    input[type=number]{padding:8px;border-radius:8px;border:1px solid #ccc;width:65%;margin-right:5px;}
+    .stat-card{background:linear-gradient(135deg,#ffb347,#ffcc33);padding:15px;border-radius:12px;color:#222;margin-bottom:10px;text-align:center;}
+    .stat-card.blue{background:linear-gradient(135deg,#66ccff,#3399ff);color:#fff;}
+    .stat-card.green{background:linear-gradient(135deg,#33cc95,#11998e);color:#fff;}
+    @media(max-width:768px){.container{flex-direction:column;}}
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="{{ url_for('static', filename='uploads/izlogo.png') }}" alt="Logo IZRUSSIA">
+  <div class="username" id="userName">Bonjour, Utilisateur</div>
+</header>
+
+<div class="container">
+  <div class="card main">
+    <div class="section">
+      <h2>Mes articles</h2>
+      <div id="articlesList"></div>
+    </div>
+
+    <div class="section">
+      <h2>Mes cotisations</h2>
+      <div class="balance-box">
+        Solde actuel : <span id="balanceAmount">0 FCFA</span><br>
+        <small id="statusLabel" style="display:none;">(dépôt en cours...)</small>
+      </div>
+      <p style="color:red; font-size:14px; margin-top:8px;">
+  ⚠️ La somme cotisée ne peut être récupérée qu'une fois l'objectif d'achat atteint.
+</p>
+      <input type="number" id="depositAmount" placeholder="Montant à déposer">
+      <button class="btn primary" id="depositBtn">Déposer</button>
+
+      <h3 style="margin-top:15px;">Historique des cotisations</h3>
+      <div id="cotisationsList"></div>
+    </div>
+
+    <div class="section">
+      <h2>Mes statistiques</h2>
+      <div class="stat-card blue">
+        Articles publiés : <span id="countArticles">0</span>
+      </div>
+      <div class="stat-card green">
+        Cotisations validées : <span id="countCotisations">0</span>
+      </div>
+      <div class="stat-card">
+        Date d'inscription : <span id="joinDate">--</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card sidebar">
+    <h2>Activité récente</h2>
+    <div id="recentActivity" style="color:#555;font-size:14px;">Aucune activité récente.</div>
+
+   <h2 style="margin-top:20px;">Publicités</h2>
+<div class="ad">
+  <img src="{{ url_for('static', filename='uploads/pub1.png') }}" alt="Pub 1" style="width:100%;height:220px;object-fit:cover;border-radius:10px;">
+</div>
+<div class="ad" style="margin-top:10px;">
+  <img src="{{ url_for('static', filename='uploads/pub2.png') }}" alt="Pub 2" style="width:100%;height:220px;object-fit:cover;border-radius:10px;">
+</div>
+</div>
+
+<!-- Barre de navigation -->
+<nav class="tabbar">
+  <button onclick="window.location.href='{{ url_for('dashboard_page2') }}'">
+    <i class="fas fa-home"></i><span>Accueil</span>
+  </button>
+  <button onclick="window.location.href='{{ url_for('sell_page') }}'">
+    <i class="fas fa-store"></i><span>Vendre</span>
+  </button>
+  <button class="active" onclick="window.location.href='{{ url_for('profile_page') }}'">
+    <i class="fas fa-user"></i><span>Profil</span>
+  </button>
+  <button onclick="window.location.href='{{ url_for('logout') }}'">
+    <i class="fas fa-sign-out-alt"></i><span>Quitter</span>
+  </button>
+</nav>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{--accent:#ff6600;--primary:#000;}
+.tabbar{position:fixed;bottom:0;left:0;width:100%;background:var(--primary);display:flex;justify-content:space-around;padding:8px 0;border-top-left-radius:20px;border-top-right-radius:20px;box-shadow:0 -2px 10px rgba(0,0,0,0.25);}
+.tabbar button{background:none;border:none;color:#fff;display:flex;flex-direction:column;align-items:center;font-size:13px;cursor:pointer;flex:1;padding:8px 0;transition:all .3s;}
+.tabbar button i{font-size:18px;margin-bottom:3px;}
+.tabbar button:hover{color:var(--accent);transform:translateY(-3px);}
+.tabbar button.active{color:var(--accent);}
+body{padding-bottom:70px;}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+  if (!token) return window.location.href = '/login';
+  if (user && user.first_name) document.getElementById('userName').textContent = `Bonjour, ${user.first_name}`;
+  await loadProfileData();
+  await updateUserBalance(user.id);
+});
+
+async function loadProfileData() {
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/profile", {
+      headers: { "Authorization": "Bearer " + localStorage.getItem("token") }
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    // Articles
+    document.getElementById("countArticles").textContent = data.articles.length;
+    const validCot = data.cotisations.filter(c => c.statut === "validee").length;
+    document.getElementById("countCotisations").textContent = validCot;
+    document.getElementById("joinDate").textContent = new Date(data.created_at || Date.now()).toLocaleDateString();
+
+    document.getElementById("articlesList").innerHTML = data.articles.map(a => `
+      <div class="article ${a.valid ? 'valid' : 'invalid'}">
+        <img src="${a.image}" alt="">
+        <div><strong>${a.title}</strong><br>${a.valid ? '<span style="color:green;">✔ Validé</span>' : '<span style="color:red;">⏳ En attente</span>'}</div>
+      </div>`).join('');
+
+    // Cotisations
+    document.getElementById("cotisationsList").innerHTML = data.cotisations.map(c => `
+      <div class="article" style="border-color:${c.statut === 'validee' ? 'green' : '#ccc'}">
+       
+        <div>
+          <strong>${c.statut === 'validee' ? '✅ Validée' : '⏳ En attente'}</strong><br>
+          Montant : ${c.montant_envoye.toLocaleString()} FCFA<br>
+          Reçu : ${c.montant_recu.toLocaleString()} FCFA<br>
+          <small>${c.date_cotisation}</small>
+        </div>
+      </div>`).join('');
+
+  } catch (e) {
+    console.error(e);
+    alert("Erreur chargement profil.");
+  }
+}
+
+// ✅ Nouvelle fonction pour recalculer le solde à partir des cotisations validées
+async function updateUserBalance(userId) {
+  try {
+    const res = await fetch(`http://127.0.0.1:5000/api/user_balance/${userId}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    document.getElementById("balanceAmount").textContent = data.balance.toLocaleString() + " FCFA";
+  } catch (err) {
+    console.error("Erreur de mise à jour du solde:", err);
+  }
+}
+
+document.getElementById("depositBtn").addEventListener("click", async () => {
+  const montant = parseFloat(document.getElementById("depositAmount").value);
+  if (isNaN(montant) || montant <= 0) return alert("Montant invalide");
+  const frais = montant * 0.05, montantRecu = montant - frais;
+  alert(`Montant envoyé: ${montant} FCFA\nFrais: ${frais} FCFA\nMontant crédité: ${montantRecu} FCFA`);
+  document.getElementById("statusLabel").style.display = "inline";
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/deposit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({ montant_envoye: montant, montant_recu: montantRecu })
+    });
+    if (!res.ok) throw new Error();
+    alert("✅ Dépôt enregistré, en attente de validation admin.");
+    document.getElementById("depositAmount").value = "";
+  } catch {
+    alert("Erreur de dépôt.");
+  }
+});
+</script>
+
+</body>
+</html>
