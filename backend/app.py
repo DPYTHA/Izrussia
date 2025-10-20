@@ -62,7 +62,7 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 print("📧 MAIL_USERNAME =", app.config['MAIL_USERNAME'])
 print("🔒 MAIL_PASSWORD défini ?", bool(app.config['MAIL_PASSWORD']))
 
-app.config['MAIL_DEFAULT_SENDER'] = ('IZRUSSIA', 'moua19878@gmail.com')
+app.config['MAIL_DEFAULT_SENDER'] = ('IZRUSSIA', os.environ.get("MAIL_USERNAME"))
 
 
 
@@ -257,6 +257,8 @@ def details_page():
     if not product_id:
         return "Aucun produit sélectionné", 400
     return render_template('details.html')  # ton fichier HTML de détails
+
+
 
 
 
