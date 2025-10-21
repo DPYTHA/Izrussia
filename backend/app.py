@@ -872,7 +872,7 @@ def dashboard_page1():
     # DEBUG rapide
     print(f"Articles affichés sur dashboard: {len(articles_data)}")
 
-    return render_template('dashboard.html', user_first_name=user_first_name, articles=articles_data, active='dashboard')
+    return render_template('Dashboard.html', user_first_name=user_first_name, articles=articles_data, active='dashboard')
 
 app.register_blueprint(sell_bp)
 
