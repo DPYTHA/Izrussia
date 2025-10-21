@@ -259,7 +259,7 @@ def details_page():
     product_id = request.args.get('id')
     if not product_id:
         return "Aucun produit sélectionné", 400
-    return render_template('details.html')  # ton fichier HTML de détails
+    return render_template('Details.html')  # ton fichier HTML de détails
 
 
 
