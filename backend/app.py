@@ -302,30 +302,6 @@ def send_email_html(subject, recipient, html_body):
 
 # ---------------- section admin ----------------
 
-
-
-
-
-# @app.before_first_request
-def create_admin():
-    admin_email = "pythamoua@gmail.com"
-    admin = User.query.filter_by(email=admin_email).first()
-    if not admin:
-        admin = User(
-            first_name="Admin",
-            last_name="Izrussia",
-            email=admin_email,
-            phone_number="0000000000",
-            password=generate_password_hash("admin123"),  # mot de passe par défaut
-            role="admin",  # ajoute ce champ si ta table Users le contient
-            is_active=True
-        )
-        db.session.add(admin)
-        db.session.commit()
-        print("✅ Compte admin créé : admin@izrussia.com / admin123")
-    else:
-        print("ℹ️ Compte admin déjà existant.")
-
 @app.route('/api/admin/data', methods=['GET'])
 @jwt_required()
 def admin_data():
@@ -1243,33 +1219,58 @@ def update_article(article_id):
 if __name__ == "__main__":
     # --- Initialisation de la base avant le premier lancement ---
     with app.app_context():
-        db.create_all()
-        print("✅ Base de données initialisée.")
+        try:
+            # Configuration DB pour Railway
+            if os.environ.get('DATABASE_URL'):
+                app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
+                print("🔗 Utilisation de DATABASE_URL de Railway")
+            
+            # Vérifiez la configuration DB
+            print(f"📡 DATABASE_URL: {os.environ.get('DATABASE_URL', 'Non défini')}")
+            print(f"🔧 SQLALCHEMY_DATABASE_URI: {app.config.get('SQLALCHEMY_DATABASE_URI', 'Non défini')}")
 
-        # --- Création automatique d'un compte admin "caché" si absent ---
-        admin_email = "pythamoua@gmail.com"
-        admin = User.query.filter_by(email=admin_email).first()
-        if not admin:
-            # Utiliser le constructeur User (qui hash le mot de passe avec bcrypt)
-            admin = User(
-                first_name="Admin",
-                last_name="Izrussia",
-                email=admin_email,
-                phone="0000000000",
-                password="admin123"   # --> laisse le constructeur hash le mot de passe
-            )
-            # régler les champs supplémentaires qui ne sont pas gérés par __init__
-            admin.role = "admin"
-            admin.is_active = True
+            # Testez la connexion
+            try:
+                with db.engine.connect() as conn:
+                    print("✅ Connexion DB réussie")
+            except Exception as e:
+                print(f"❌ Erreur connexion DB: {e}")
+                raise
 
-            db.session.add(admin)
-            db.session.commit()
-            print("✅ Compte admin créé :", admin_email, "/ mot de passe par défaut: admin123")
-        else:
-            print("ℹ️ Compte admin déjà existant :", admin_email)
+            # Création des tables
+            print("🔄 Création des tables...")
+            db.create_all()
+            print("✅ Base de données initialisée.")
+
+            # Vérifiez si les tables existent
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            print(f"📋 Tables disponibles: {tables}")
+
+            # --- Création automatique d'un compte admin "caché" si absent ---
+            admin_email = "pythamoua@gmail.com"
+            admin = User.query.filter_by(email=admin_email).first()
+            if not admin:
+                admin = User(
+                    first_name="Admin",
+                    last_name="Izrussia",
+                    email=admin_email,
+                    phone="0000000000",
+                    password="admin123"
+                )
+                admin.role = "admin"
+                admin.is_active = True
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Compte admin créé :", admin_email, "/ mot de passe par défaut: admin123")
+            else:
+                print("ℹ️ Compte admin déjà existant :", admin_email)
+
+        except Exception as e:
+            print(f"❌ Erreur lors de l'initialisation: {e}")
 
     # --- Démarrage du serveur Flask + SocketIO ---
     port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 Démarrage du serveur sur le port {port}")
     socketio.run(app, host="0.0.0.0", port=port)
-
-
