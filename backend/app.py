@@ -75,6 +75,22 @@ mail = Mail(app)
 jwt = JWTManager(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Après db = SQLAlchemy(app)
+@app.before_first_request
+def create_tables():
+    try:
+        print("🔍 Tentative de création des tables...")
+        db.create_all()
+        print("✅ Tables créées avec succès")
+        
+        # Vérifier la connexion
+        result = db.session.execute("SELECT current_database();")
+        db_name = result.scalar()
+        print(f"📊 Connecté à la base de données: {db_name}")
+        
+    except Exception as e:
+        print(f"❌ Erreur création tables: {e}")
+
 
 # ---------------- MODELES ----------------
 class User(db.Model):
