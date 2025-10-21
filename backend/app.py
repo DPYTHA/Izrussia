@@ -841,7 +841,7 @@ def sell():
 
 @app.route('/dashboard')
 @jwt_required()
-def dashboard_page():
+def dashboard_page1():
     user_id = int(get_jwt_identity())
     current_user = User.query.get(user_id)
     user_first_name = current_user.first_name if current_user else "Utilisateur"
