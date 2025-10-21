@@ -1200,6 +1200,9 @@ def update_article(article_id):
 
 
 # ---------------- RUN ----------------
+with app.app_context():
+    db.create_all()
+    print("✅ Toutes les tables ont été créées avec succès !")
 
 if __name__ == "__main__":
     # --- Initialisation de la base avant le premier lancement ---
