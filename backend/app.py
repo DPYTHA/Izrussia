@@ -231,7 +231,7 @@ def register_page(): return render_template('register.html')
 def login_page(): return render_template('login.html')
 @app.route('/dashboard')
 def dashboard_page():
-    return render_template('dashboard.html')
+    return render_template('Dashboard.html')
 
 @app.route('/admin') 
 def admin_page(): return render_template('admin.html')
