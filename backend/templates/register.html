@@ -117,27 +117,40 @@
       submitBtn.textContent = 'Enregistrement...';
 
       try {
-        const res = await fetch('https://izrussia-production.up.railway.app/api/register', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ first_name, last_name, email, phone, password })
-        });
-        const j = await res.json();
-        if(!res.ok){ showError(j.message || 'Erreur inscription'); }
-        else {
-          alert(j.message || 'Inscription réussie');
-             window.location.href = "/login";
-;
+      const res = await fetch('https://izrussia-production.up.railway.app/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name, last_name, email, phone, password })
+      });
 
-        }
-      } catch(err){
-        showError('Erreur réseau. Vérifie ton backend.');
-        console.error(err);
-      } finally {
-        submitBtn.disabled=false;
-        submitBtn.textContent='Créer mon compte';
+      let j = {};
+      try {
+        j = await res.json();
+      } catch {
+        showError("Réponse serveur invalide");
+        return;
       }
-    });
+
+      // 🟢 Vérification du statut
+      if (res.status !== 200 && res.status !== 201) {
+        showError(j.message || 'Erreur inscription');
+      } else {
+        // ✅ Succès
+        alert(j.message || 'Inscription réussie');
+        // (Optionnel) petit délai avant redirection
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      }
+
+    } catch (err) {
+      showError('Erreur réseau. Vérifie ton backend.');
+      console.error(err);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Créer mon compte';
+    }
+  });
   </script>
 </body>
 </html>
