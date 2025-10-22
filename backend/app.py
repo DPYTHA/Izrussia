@@ -19,9 +19,8 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from backend.config import Config
 from flask import Flask
-from backend.model import db
-
-from model import db, Cotisation
+from backend.extensions import db
+from backend.model import Cotisation
 from admin_routes import admin_bp
 # ---------------- CONFIG ----------------
 
