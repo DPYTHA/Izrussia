@@ -285,11 +285,6 @@ def upload_file():
 
 
 
-# ---------------- HELPERS ----------------
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
 
 def send_email_html(subject, recipient, html_body):
     try:
@@ -631,9 +626,14 @@ def get_articles():
 
     for a in articles:
         photos_urls = []
-        if a.photos:
+
+        # Vérifie si l'article a des photos et si c'est une liste
+        if a.photos and isinstance(a.photos, list):
             for f in a.photos:
-                photos_urls.append(url_for('static', filename=f'uploads/{f}', _external=True))
+                if f:  # ignorer les fichiers vides
+                    photos_urls.append(url_for('static', filename=f'uploads/{f}', _external=True))
+
+        # Si aucune photo, ajouter une image placeholder
         if not photos_urls:
             photos_urls = [url_for('static', filename='assets/placeholder.png', _external=True)]
 
@@ -648,6 +648,7 @@ def get_articles():
             "seller_first_name": a.user.first_name if a.user else "Anonyme",
             "seller_last_name": a.user.last_name if a.user else ""
         })
+
     return jsonify(data)
 
 
@@ -677,7 +678,8 @@ def get_articledetails(article_id):
             "name": f"{article.user.first_name} {article.user.last_name}",
             "rating": 4.5
         },
-        "images": [f"/static/uploads/{img}" for img in images] or ["/static/images/default.png"]
+        "images": [f"/static/uploads/{img}" for img in images] if images else ["/static/images/default.png"]
+
     })
 
 # Profil
@@ -704,9 +706,10 @@ def get_profile_data():
     articles = [
         {
             "title": a.title,
-            "image": url_for('static', filename=f"uploads/{a.photos[0]}", _external=True) 
-                     if hasattr(a, "photos") and a.photos 
-                     else url_for('static', filename='assets/placeholder.png', _external=True),
+            "image": url_for('static', filename=f"uploads/{a.photos[0]}", _external=True)
+         if hasattr(a, "photos") and a.photos and len(a.photos) > 0
+         else url_for('static', filename='assets/placeholder.png', _external=True),
+
             "valid": a.status in ["approved", "validated"],
             "status": a.status
         }
