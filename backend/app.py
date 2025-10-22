@@ -254,6 +254,27 @@ def details_page():
         return "Aucun produit sélectionné", 400
     return render_template('Details.html')
 
+
+
+# Configuration Cloudinary
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    CLOUDINARY_AVAILABLE = True
+    print("✅ Cloudinary importé avec succès")
+    
+    # Configuration Cloudinary
+    cloudinary.config(
+        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.getenv('CLOUDINARY_API_KEY'),
+        api_secret=os.getenv('CLOUDINARY_API_SECRET')
+    )
+    
+except ImportError as e:
+    CLOUDINARY_AVAILABLE = False
+    print(f"❌ Cloudinary non installé: {e}")
+    print("💡 Exécutez: pip install cloudinary")
 # Upload avec Cloudinary
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -1150,7 +1171,7 @@ def update_article(article_id):
 
 @app.route('/api/admin/article/<int:article_id>/delete', methods=['DELETE'])
 @jwt_required()
-def admin_delete_article(article_id):
+def admin_delete_articleCloud(article_id):
     current_id = int(get_jwt_identity())
     current_user = User.query.get(current_id)
     
