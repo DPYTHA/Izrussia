@@ -130,21 +130,30 @@
         </section>
 
         <!-- COTISATIONS -->
-        <section id="cotisations" class="mb-4">
-          <div class="card p-3">
-            <h5 class="mb-3">Cotisations</h5>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead>
-                  <tr><th>#</th><th>Utilisateur</th><th>Montant envoyé</th><th>Montant reçu</th><th>Statut</th><th>Date</th></tr>
-                </thead>
-                <tbody id="cotisationsBody">
-                  <tr><td colspan="6" class="text-center small-muted">Chargement...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+<section id="cotisations" class="mb-4">
+  <div class="card p-3">
+    <h5 class="mb-3">Cotisations</h5>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Utilisateur</th>
+            <th>Montant envoyé</th>
+            <th>Montant reçu</th>
+            <th>Statut</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cotisationsBody">
+          <tr><td colspan="7" class="text-center small-muted">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
       </main>
     </div>
   </div>
@@ -232,25 +241,53 @@
         </tr>`;
       });
 
-      // COTISATIONS TABLE
-      const cotBody = document.getElementById("cotisationsBody");
-      cotBody.innerHTML = "";
-     data.cotisations.forEach((c, i) => {
-    cotBody.innerHTML += `
-      <tr>
-        <td>${i+1}</td>
-        <td>${c.user_name || '-'}</td>
-        <td>${c.montant_envoye || 0}</td>
-        <td>${c.montant_recu || 0}</td>
-        <td>${c.statut || '-'}</td>
-        <td>${c.date_cotisation || '-'}</td>
-      </tr>`;
+   // COTISATIONS TABLE
+const cotBody = document.getElementById("cotisationsBody");
+cotBody.innerHTML = "";
 
+data.cotisations.forEach((c, i) => {
+  cotBody.innerHTML += `
+    <tr data-id="${c.id}">
+      <td>${i + 1}</td>
+      <td>${c.user_name || '-'}</td>
+      <td>${c.montant_envoye?.toLocaleString() || 0}</td>
+      <td>${c.montant_recu?.toLocaleString() || 0}</td>
+      <td><span class="badge ${c.statut === 'confirmée' ? 'bg-success' : c.statut === 'approuvée' ? 'bg-primary' : 'bg-secondary'}">${c.statut || '-'}</span></td>
+      <td>${c.date_cotisation || '-'}</td>
+      <td class="table-actions">
+        ${c.statut !== 'approuvée' ? `<button class="btn btn-sm btn-success" onclick="adminCotisationAction(${c.id}, 'approve')"><i class="fa fa-check"></i> Approuver</button>` : ''}
+        ${c.statut !== 'confirmée' ? `<button class="btn btn-sm btn-primary" onclick="adminCotisationAction(${c.id}, 'confirm')"><i class="fa fa-circle-check"></i> Confirmer</button>` : ''}
+        <button class="btn btn-sm btn-danger" onclick="confirmDeleteCotisation(${c.id}, '${c.user_name || ''}')"><i class="fa fa-trash"></i></button>
+      </td>
+    </tr>`;
+});
 
-      });
 
     } catch(err){ alert("Erreur : "+err.message); console.error(err); }
   });
+
+  async function adminCotisationAction(id, action) {
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch(`https://izrussia-production.up.railway.app/api/admin/cotisation/${id}/${action}`, {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    alert(data.message || "Action effectuée !");
+    location.reload();
+  } catch (e) {
+    alert("Erreur : " + e.message);
+  }
+}
+
+function confirmDeleteCotisation(id, user) {
+  if (confirm(`Supprimer la cotisation de ${user || 'cet utilisateur'} ?`)) {
+    adminCotisationAction(id, "delete");
+  }
+}
+
 
   async function adminUserAction(id,action){
     const token = localStorage.getItem("token");

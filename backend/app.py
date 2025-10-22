@@ -43,6 +43,7 @@ app.config.from_object(Config)
 
 
 sell_bp = Blueprint("sell", __name__)
+admin_bp = Blueprint('admin', __name__)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
@@ -1199,7 +1200,38 @@ def update_article(article_id):
     return jsonify({"message": "Article mis à jour avec succès."}), 200
 
 
+#Modifier et approuver les cotisations
 
+app.register_blueprint(admin_bp)
+
+
+@admin_bp.route('/api/admin/cotisation/<int:id>/<string:action>', methods=['POST'])
+@jwt_required()
+def admin_cotisation_action(id, action):
+    admin_email = get_jwt_identity()
+    cot = Cotisation.query.get(id)
+
+    if not cot:
+        return jsonify({"message": "Cotisation introuvable"}), 404
+
+    # Gestion des actions
+    if action == "approve":
+        cot.statut = "approuvée"
+        db.session.commit()
+        return jsonify({"message": f"Cotisation #{id} approuvée avec succès"}), 200
+
+    elif action == "confirm":
+        cot.statut = "confirmée"
+        db.session.commit()
+        return jsonify({"message": f"Cotisation #{id} confirmée avec succès"}), 200
+
+    elif action == "delete":
+        db.session.delete(cot)
+        db.session.commit()
+        return jsonify({"message": f"Cotisation #{id} supprimée"}), 200
+
+    else:
+        return jsonify({"message": "Action invalide"}), 400
 
 # ---------------- RUN ----------------
 with app.app_context():
