@@ -61,6 +61,15 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+# ---------------- CONFIG CLASS ----------------
+class Config:
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-super-secret-key')
+    
+
 # Charger la configuration depuis config.py
 app.config.from_object(Config)
 
