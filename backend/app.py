@@ -1147,6 +1147,47 @@ def update_article(article_id):
     db.session.commit()
     return jsonify({"message": "Article mis à jour avec succès."}), 200
 
+
+@app.route('/api/admin/article/<int:article_id>/delete', methods=['DELETE'])
+@jwt_required()
+def admin_delete_article(article_id):
+    current_id = int(get_jwt_identity())
+    current_user = User.query.get(current_id)
+    
+    # Vérifier que l'utilisateur est admin
+    if not current_user or current_user.role != "admin":
+        return jsonify({"error": "Accès refusé - Admin uniquement"}), 403
+
+    # Trouver l'article
+    article = Article.query.get_or_404(article_id)
+    
+    try:
+        # Optionnel: Supprimer les images de Cloudinary si nécessaire
+        if article.photos and CLOUDINARY_AVAILABLE:
+            for photo_url in article.photos:
+                if photo_url.startswith('http') and 'cloudinary.com' in photo_url:
+                    try:
+                        # Extraire le public_id de l'URL Cloudinary
+                        public_id = photo_url.split('/')[-1].split('.')[0]
+                        cloudinary.uploader.destroy(public_id)
+                        print(f"✅ Image Cloudinary supprimée: {public_id}")
+                    except Exception as e:
+                        print(f"⚠️ Erreur suppression Cloudinary: {e}")
+        
+        # Supprimer l'article de la base de données
+        db.session.delete(article)
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"Article '{article.title}' supprimé avec succès",
+            "deleted_id": article_id
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erreur suppression article: {e}")
+        return jsonify({"error": "Erreur lors de la suppression de l'article"}), 500
+
 @app.route('/api/admin/cotisation/<int:id>/<string:action>', methods=['POST'])
 @jwt_required()
 def admin_cotisation_action2(id, action):

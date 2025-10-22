@@ -243,27 +243,28 @@
             </div>`;
         }
 
-        articlesBody.innerHTML += `
-        <tr data-id="${a.id}">
-          <td>${i+1}</td>
-          <td>${imagesHtml}</td>
-          <td contenteditable="true" class="editable" data-field="title">${a.title}</td>
-          <td contenteditable="true" class="editable" data-field="description">${a.description||'-'}</td>
-          <td contenteditable="true" class="editable" data-field="price">${a.price||0}</td>
-          <td contenteditable="true" class="editable" data-field="category">${a.category||'-'}</td>
-          <td>${a.user_name||'-'}</td>
-          <td>
-            <span class="badge ${a.status === 'approved' ? 'bg-success' : a.status === 'pending' ? 'bg-warning' : 'bg-secondary'}">
-              ${a.status||'-'}
-            </span>
-          </td>
-          <td>
-            ${a.status !== 'approved' ? `<button class='btn btn-sm btn-success mb-1' onclick="adminArticleAction(${a.id},'approve')">Approuver</button>` : ''}
-            ${a.status !== 'rejected' ? `<button class='btn btn-sm btn-danger mb-1' onclick="adminArticleAction(${a.id},'reject')">Rejeter</button>` : ''}
-            <button class='btn btn-sm btn-primary mb-1' onclick="saveArticle(${a.id})">Enregistrer</button>
-            <button class='btn btn-sm btn-outline-danger mb-1' onclick="confirmDeleteArticle(${a.id}, '${a.title}')">Supprimer</button>
-          </td>
-        </tr>`;
+       // Dans la génération du tableau des articles
+articlesBody.innerHTML += `
+<tr data-id="${a.id}">
+  <td>${i+1}</td>
+  <td>${imagesHtml}</td>
+  <td contenteditable="true" class="editable" data-field="title">${a.title}</td>
+  <td contenteditable="true" class="editable" data-field="description">${a.description||'-'}</td>
+  <td contenteditable="true" class="editable" data-field="price">${a.price||0}</td>
+  <td contenteditable="true" class="editable" data-field="category">${a.category||'-'}</td>
+  <td>${a.user_name||'-'}</td>
+  <td>
+    <span class="badge ${a.status === 'approved' ? 'bg-success' : a.status === 'pending' ? 'bg-warning' : 'bg-secondary'}">
+      ${a.status||'-'}
+    </span>
+  </td>
+  <td>
+    ${a.status !== 'approved' ? `<button class='btn btn-sm btn-success mb-1' onclick="adminArticleAction(${a.id},'approve')">Approuver</button>` : ''}
+    ${a.status !== 'rejected' ? `<button class='btn btn-sm btn-danger mb-1' onclick="adminArticleAction(${a.id},'reject')">Rejeter</button>` : ''}
+    <button class='btn btn-sm btn-primary mb-1' onclick="saveArticle(${a.id})">Enregistrer</button>
+    <button class='btn btn-sm btn-outline-danger mb-1' onclick="deleteArticle(${a.id})">Supprimer</button>
+  </td>
+</tr>`;
       });
 
       // COTISATIONS TABLE
@@ -394,6 +395,36 @@
       adminArticleAction(id, "delete");
     }
   }
+
+  async function deleteArticle(id) {
+    const token = localStorage.getItem("token");
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://izrussia-production.up.railway.app/api/admin/article/${id}/delete`, {
+            method: "DELETE",
+            headers: { 
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            }
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(data.error || data.message || "Erreur lors de la suppression");
+        }
+        
+        alert(data.message || "Article supprimé avec succès !");
+        location.reload(); // Recharger la page pour voir les changements
+        
+    } catch (error) {
+        console.error("Erreur suppression article:", error);
+        alert("Erreur: " + error.message);
+    }
+}
 
   document.getElementById("toggleSidebar")?.addEventListener("click",()=>{
     const sb=document.querySelector(".sidebar"); 
