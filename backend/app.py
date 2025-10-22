@@ -34,10 +34,13 @@ app = Flask(
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# 📁 Dossier des uploads (dans backend/static/uploads)
-UPLOAD_FOLDER = os.path.join(STATIC_DIR, 'uploads')
+# Dossier upload
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 # Charger la configuration depuis config.py
 app.config.from_object(Config)
 
@@ -45,7 +48,7 @@ app.config.from_object(Config)
 sell_bp = Blueprint("sell", __name__)
 
 
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
 
 
 # Configuration
@@ -263,6 +266,22 @@ def details_page():
     return render_template('Details.html')  # ton fichier HTML de détails
 
 
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'photo' not in request.files:
+        return jsonify({'error': 'Aucune photo fournie'}), 400
+
+    file = request.files['photo']
+
+    if file.filename == '':
+        return jsonify({'error': 'Nom de fichier vide'}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return jsonify({'filename': filename}), 200
+
+    return jsonify({'error': 'Format de fichier non autorisé'}), 400
 
 
 

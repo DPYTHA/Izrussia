@@ -236,7 +236,7 @@ function renderArticles(list){
   container.innerHTML='';
   if(list.length===0){ container.innerHTML='<p>Aucun article trouvé.</p>'; return; }
   list.forEach(a=>{
-    const image = a.photos && a.photos.length ? a.photos[0] : '/static/assets/placeholder.png';
+    const image = a.photos && a.photos.length ? `/static/uploads/${a.photos[0]}` : '/static/assets/placeholder.png';
     const card = document.createElement('a');
     card.className='card';
     card.href=`/details?id=${a.id}`;
