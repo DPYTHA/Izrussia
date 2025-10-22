@@ -1203,7 +1203,7 @@ def update_article(article_id):
 # Route admin pour gérer les cotisations
 @app.route('/api/admin/cotisation/<int:id>/<string:action>', methods=['POST'])
 @jwt_required()
-def admin_cotisation_action(id, action):
+def admin_cotisation_action2(id, action):
     admin_email = get_jwt_identity()  # email de l'admin
     cot = Cotisation.query.get(id)
 
