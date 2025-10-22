@@ -9,4 +9,4 @@ pip install -r requirements.txt
 
 # Lancer Flask
 python app.py
-chmod +x start.sh
+

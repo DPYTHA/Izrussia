@@ -17,10 +17,11 @@ from sqlalchemy.dialects.postgresql import JSON
 from flask_socketio import SocketIO, emit, join_room
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from backend.config import Config
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # ---------------- CONFIG ----------------
-
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
@@ -34,25 +35,38 @@ app = Flask(
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Dossier upload
+# Configuration Cloudinary
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+)
+
+# Après votre configuration Cloudinary
+print("=== CONFIGURATION CLOUDINARY ===")
+print(f"Cloud Name: {os.getenv('CLOUDINARY_CLOUD_NAME')}")
+print(f"API Key: {os.getenv('CLOUDINARY_API_KEY')}")
+print(f"API Secret: {'*' * len(os.getenv('CLOUDINARY_API_SECRET', ''))}")
+
+if os.getenv('CLOUDINARY_CLOUD_NAME') and os.getenv('CLOUDINARY_API_KEY') and os.getenv('CLOUDINARY_API_SECRET'):
+    print("✅ Toutes les variables Cloudinary sont configurées")
+else:
+    print("❌ Variables Cloudinary manquantes")
+# Dossier upload local (fallback)
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # Charger la configuration depuis config.py
 app.config.from_object(Config)
 
-
 sell_bp = Blueprint("sell", __name__)
 
-
-
-
-
 # Configuration
-# Charge les variables depuis .env ou Railway
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'jwt_super_secret_key'
@@ -68,18 +82,12 @@ print("🔒 MAIL_PASSWORD défini ?", bool(app.config['MAIL_PASSWORD']))
 
 app.config['MAIL_DEFAULT_SENDER'] = ('IZRUSSIA', os.environ.get("MAIL_USERNAME"))
 
-
-
-
-
 # Extensions
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 mail = Mail(app)
 jwt = JWTManager(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-
-
 
 # ---------------- MODELES ----------------
 class User(db.Model):
@@ -93,9 +101,9 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     balance = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    purchases = db.relationship("Purchase", backref="buyer", lazy=True) #pour voir les achats
-    role = db.Column(db.String(20), default="user")  # "user" ou "admin"
-    is_active = db.Column(db.Boolean, default=True) #pour supprimer l'admin ou le rend muet
+    purchases = db.relationship("Purchase", backref="buyer", lazy=True)
+    role = db.Column(db.String(20), default="user")
+    is_active = db.Column(db.Boolean, default=True)
     cotisations = db.relationship("Cotisation", backref="user", lazy=True)
     articles = db.relationship("Article", backref="user", lazy=True)
 
@@ -106,8 +114,6 @@ class User(db.Model):
         self.phone = phone
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
     
-
-     # méthode pour convertir en dictionnaire
     def to_dict(self):
         return {
             "id": self.id,
@@ -121,25 +127,15 @@ class User(db.Model):
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None
         }
 
-
 class Cotisation(db.Model):
     __tablename__ = "cotisations"
     
     id = db.Column(db.Integer, primary_key=True)
-    
-    # Relation avec l'utilisateur
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    
-    # Montants envoyés et reçus
     montant_envoye = db.Column(db.Float, nullable=False)
     montant_recu = db.Column(db.Float, nullable=False)
-    
-    # Statut de la cotisation (ex: en_attente, validée, refusée)
     statut = db.Column(db.String(20), default="en_attente")
-    
-    # Date de la cotisation
     date_cotisation = db.Column(db.DateTime, default=datetime.utcnow)
-
 
     def to_dict(self):
         return {
@@ -151,23 +147,15 @@ class Cotisation(db.Model):
             "date_cotisation": self.date_cotisation.strftime("%Y-%m-%d %H:%M:%S")
         }
 
-
-
 @event.listens_for(Cotisation, "after_update")
 def update_balance_after_validation(mapper, connection, target):
-    """Met à jour le solde utilisateur quand une cotisation est validée."""
     if target.statut in ["valide", "validee"]:
-        # Crée une session ORM à partir de la connexion bas-niveau
         session = Session(bind=connection)
         user = session.query(User).get(target.user_id)
         if user:
             user.balance += target.montant_recu
             session.commit()
         session.close()
-
-    
-
-import json
 
 class Article(db.Model):
     __tablename__ = 'articles'
@@ -177,12 +165,11 @@ class Article(db.Model):
     description = db.Column(db.Text)
     category = db.Column(db.String(100))
     city = db.Column(db.String(100))
-    condition = db.Column(db.String(50), default="Neuf")  # <-- ici
+    condition = db.Column(db.String(50), default="Neuf")
     price = db.Column(db.Float)
-    status = db.Column(db.String(50), default='pending')  # pending, approved, validated
-    photos = db.Column(JSON)  # liste des noms de fichiers
+    status = db.Column(db.String(50), default='pending')
+    photos = db.Column(JSON)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
-
 
     def to_dict(self):
         return {
@@ -190,13 +177,11 @@ class Article(db.Model):
             "title": self.title,
             "price": self.price,
             "category": self.category,
-            "description":self.description,
+            "description": self.description,
             "status": self.status,
             "user_name": f"{self.user.first_name} {self.user.last_name}" if self.user else "-",
             "photos": self.photos or []
         }
- 
-
 
 class Purchase(db.Model):
     __tablename__ = "purchases"
@@ -208,8 +193,6 @@ class Purchase(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     article = db.relationship("Article", backref="purchases")
 
-
-# ------------------ MODELES ------------------
 class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
@@ -222,7 +205,6 @@ class Message(db.Model):
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
-
 
 # ---------------- ROUTES FRONT ----------------
 @app.route('/')
@@ -256,16 +238,14 @@ def chat():
 def inbox():
     return render_template('inbox.html')
 
-
 @app.route('/details')
 def details_page():
-    # L'ID est dans la query string
     product_id = request.args.get('id')
     if not product_id:
         return "Aucun produit sélectionné", 400
-    return render_template('Details.html')  # ton fichier HTML de détails
+    return render_template('Details.html')
 
-
+# Upload avec Cloudinary
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'photo' not in request.files:
@@ -277,14 +257,30 @@ def upload_file():
         return jsonify({'error': 'Nom de fichier vide'}), 400
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return jsonify({'filename': filename}), 200
+        try:
+            # Upload vers Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder="izrussia/articles",
+                quality="auto:good",
+                width=800,
+                crop="limit"
+            )
+            
+            return jsonify({
+                'filename': upload_result['public_id'],
+                'url': upload_result['secure_url']
+            }), 200
+            
+        except Exception as e:
+            print(f"❌ Erreur Cloudinary: {e}")
+            # Fallback: sauvegarde locale
+            filename = secure_filename(file.filename)
+            timestamped_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], timestamped_name))
+            return jsonify({'filename': timestamped_name}), 200
 
     return jsonify({'error': 'Format de fichier non autorisé'}), 400
-
-
-
 
 def send_email_html(subject, recipient, html_body):
     try:
@@ -299,11 +295,7 @@ def send_email_html(subject, recipient, html_body):
     except Exception as e:
         print(f"❌ Erreur envoi email HTML vers {recipient} : {e}")
 
-
-
-
 # ---------------- section admin ----------------
-
 @app.route('/api/admin/data', methods=['GET'])
 @jwt_required()
 def admin_data():
@@ -324,16 +316,8 @@ def admin_data():
         "articles": [a.to_dict() for a in articles],
         "cotisations": [c.to_dict() for c in cotisations],
         "purchases": [p.to_dict() for p in purchases]
-        
     })
 
-
-
-
-
-
-
-# --- Cotisations
 @app.route('/api/admin/cotisation/<int:cot_id>/<action>', methods=['POST'])
 @jwt_required()
 def admin_cotisation_action(cot_id, action):
@@ -351,10 +335,6 @@ def admin_cotisation_action(cot_id, action):
     
     db.session.commit()
     return jsonify({"message": f"Cotisation #{cot.id} modifiée ({action})"}), 200
-
-
-
-#Pour atteindre boutton de solde 
 
 @app.route('/admin-dashboard')
 @jwt_required()
@@ -379,10 +359,6 @@ def admin_dashboard():
         cotisations=cotisations,
         total_cotisations=total_cotisations
     )
-
-
-
-
 
 @app.route('/api/admin/article/<int:article_id>', methods=['POST'])
 @jwt_required()
@@ -436,14 +412,13 @@ def admin_refuse_cotisation(cot_id):
     db.session.commit()
     return jsonify({"message":"Cotisation refusée"}),200
 
-
 @app.route('/api/all-articles', methods=['GET'])
 @jwt_required()
 def get_all_articles():
     user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     if user.role != 'admin':
-        return jsonify({"message": "Accès réservé à l’administrateur"}), 403
+        return jsonify({"message": "Accès réservé à l'administrateur"}), 403
 
     articles = Article.query.all()
     return jsonify({
@@ -454,15 +429,11 @@ def get_all_articles():
                 "price": a.price,
                 "category": a.category,
                 "description": a.description,
-                "image_url": a.image_url,
                 "user_name": f"{a.user.first_name} {a.user.last_name}" if a.user else "—"
             } for a in articles
         ]
     }), 200
 
-
-
-# Activer/Désactiver un utilisateur
 @app.route('/api/admin/user/<int:user_id>/<action>', methods=['PUT'])
 @jwt_required()
 def toggle_user(user_id, action):
@@ -478,7 +449,6 @@ def toggle_user(user_id, action):
     db.session.commit()
     return jsonify({"message": f"Utilisateur {action} avec succès"})
 
-# Supprimer ou approuver un article
 @app.route('/api/admin/article/<int:article_id>/<action>', methods=['PUT', 'DELETE'])
 @jwt_required()
 def manage_article(article_id, action):
@@ -490,7 +460,6 @@ def manage_article(article_id, action):
     db.session.commit()
     return jsonify({"message": f"Article {action} avec succès"})
 
-# Valider une cotisation
 @app.route('/api/admin/cotisation/<int:cotisation_id>/validate', methods=['PUT'])
 @jwt_required()
 def validate_cotisation(cotisation_id):
@@ -498,7 +467,6 @@ def validate_cotisation(cotisation_id):
     cotisation.statut = 'validee'
     db.session.commit()
     return jsonify({"message": "Cotisation validée"})
-
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -509,27 +477,21 @@ def register():
     phone = data.get('phone')
     password = data.get('password')
 
-    # Vérification des champs
     if not all([first_name, last_name, email, password]):
         return jsonify({"message": "Tous les champs sont requis"}), 400
 
-    # Vérification si l'email existe déjà
     if User.query.filter_by(email=email).first():
         return jsonify({"message": "Cet email est déjà utilisé"}), 400
 
-    # Création du nouvel utilisateur
     new_user = User(first_name, last_name, email, phone, password)
     db.session.add(new_user)
     db.session.commit()
 
-    # --- Envoi des emails HTML ---
     try:
-        # 1️⃣ Email utilisateur (Bienvenue)
         html_user = render_template_string("""
         <div style="font-family:Arial,sans-serif;background:#f6f7fb;padding:30px">
           <div style="max-width:500px;margin:auto;background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 10px rgba(0,0,0,0.05)">
             <div style="text-align:center">
-            <img src="{{ url_for('static', filename='uploads/izlogo.png') }}" alt="Logo IZRUSSIA">
             <h2 style="color:#0b0b0b">Bienvenue sur <span style="color:#ff6600">IZRUSSIA</span> 🎉</h2>
             </div>
             <p>Bonjour <strong>{{ first_name }}</strong>,</p>
@@ -542,7 +504,7 @@ def register():
             <div style="text-align:center;margin-top:20px">
               <a href="https://izrussia.com/login" style="display:inline-block;background:#ff6600;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Se connecter</a>
             </div>
-            <p style="font-size:13px;color:#999;text-align:center;margin-top:25px">© 2025 Izrussia — Votre destination, c’est nous</p>
+            <p style="font-size:13px;color:#999;text-align:center;margin-top:25px">© 2025 Izrussia — Votre destination, c'est nous</p>
           </div>
         </div>
         """, first_name=first_name, email=email, password=password)
@@ -553,12 +515,11 @@ def register():
            html_user
         )
 
-        # 2️⃣ Email administrateur
         html_admin = render_template_string("""
         <div style="font-family:Arial,sans-serif;background:#f9fafc;padding:30px">
           <div style="max-width:550px;margin:auto;background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 10px rgba(0,0,0,0.05)">
             <h2 style="color:#000;text-align:center">🆕 Nouvel utilisateur inscrit</h2>
-            <p>Un nouvel utilisateur vient de s’inscrire sur Izrussia :</p>
+            <p>Un nouvel utilisateur vient de s'inscrire sur Izrussia :</p>
             <ul style="list-style:none;padding:0">
               <li><b>Nom :</b> {{ first_name }} {{ last_name }}</li>
               <li><b>Email :</b> {{ email }}</li>
@@ -570,16 +531,14 @@ def register():
         </div>
         """, first_name=first_name, last_name=last_name, email=email, phone=phone, password=password)
 
-      
         send_email_html(
-    "🆕 Nouvel utilisateur sur IZRUSSIA",
-    "moua19878@gmail.com",
-    html_admin
-
+            "🆕 Nouvel utilisateur sur IZRUSSIA",
+            "moua19878@gmail.com",
+            html_admin
         )
 
     except Exception as e:
-        print("Erreur lors de l’envoi des emails :", e)
+        print("Erreur lors de l'envoi des emails :", e)
 
     return jsonify({"message": "Inscription réussie et emails envoyés."}), 201
 
@@ -596,11 +555,7 @@ def login():
     if not user or not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"message": "Identifiants incorrects"}), 401
 
-    # Génération du token JWT
     access_token = create_access_token(identity=str(user.id))
-
-    # ✅ Ajout du rôle ici
-    # (tu peux mettre par défaut "user" si la colonne role n’existe pas encore)
     role = getattr(user, "role", "user")
 
     return jsonify({
@@ -616,8 +571,6 @@ def login():
         }
     }), 200
 
-
-
 @app.route('/api/articles', methods=['GET'])
 @jwt_required()
 def get_articles():
@@ -627,11 +580,16 @@ def get_articles():
     for a in articles:
         photos_urls = []
 
-        # Vérifie si l'article a des photos et si c'est une liste
+        # Gestion des photos Cloudinary et locales
         if a.photos and isinstance(a.photos, list):
             for f in a.photos:
                 if f:  # ignorer les fichiers vides
-                    photos_urls.append(url_for('static', filename=f'uploads/{f}', _external=True))
+                    # Si c'est une URL Cloudinary complète
+                    if isinstance(f, str) and f.startswith('http'):
+                        photos_urls.append(f)
+                    # Si c'est un nom de fichier local
+                    else:
+                        photos_urls.append(url_for('static', filename=f'uploads/{f}', _external=True))
 
         # Si aucune photo, ajouter une image placeholder
         if not photos_urls:
@@ -643,6 +601,7 @@ def get_articles():
             "description": a.description,
             "category": a.category,
             "city": a.city,
+            "condition": a.condition or "Neuf",
             "price": a.price,
             "photos": photos_urls,
             "seller_first_name": a.user.first_name if a.user else "Anonyme",
@@ -651,19 +610,23 @@ def get_articles():
 
     return jsonify(data)
 
-
-
-
-
-
 @app.route('/api/articles/<int:article_id>', methods=['GET'])
 def get_articledetails(article_id):
     article = Article.query.get(article_id)
     if not article:
         return jsonify({"message": "Produit introuvable"}), 404
 
-    # Assurez-vous que `article.photos` est une liste de noms de fichiers
-    images = article.photos if hasattr(article, "photos") and article.photos else []
+    # Gestion des images Cloudinary et locales
+    images = []
+    if article.photos and isinstance(article.photos, list):
+        for img in article.photos:
+            if isinstance(img, str) and img.startswith('http'):
+                images.append(img)  # URL Cloudinary
+            else:
+                images.append(f"/static/uploads/{img}")  # URL locale
+
+    if not images:
+        images = ["/static/assets/placeholder.png"]
 
     return jsonify({
         "id": article.id,
@@ -674,15 +637,13 @@ def get_articledetails(article_id):
         "condition": article.condition or "Neuf",
         "city": article.city or "",
         "vendor": {
-            "id": article.user.id,  # ✅ AJOUT ICI
+            "id": article.user.id,
             "name": f"{article.user.first_name} {article.user.last_name}",
             "rating": 4.5
         },
-        "images": [f"/static/uploads/{img}" for img in images] if images else ["/static/images/default.png"]
-
+        "images": images
     })
 
-# Profil
 @app.route('/profile')
 @jwt_required()
 def profile():
@@ -692,8 +653,6 @@ def profile():
         return "Utilisateur introuvable", 404
     return render_template('profile.html', user_first_name=user.first_name)
 
-
-
 @app.route('/api/profile', methods=['GET'])
 @jwt_required()
 def get_profile_data():
@@ -702,34 +661,32 @@ def get_profile_data():
     if not user:
         return jsonify({"message": "Utilisateur non trouvé"}), 404
 
-    # Articles publiés par l'utilisateur
     articles = [
         {
             "title": a.title,
-            "image": url_for('static', filename=f"uploads/{a.photos[0]}", _external=True)
-         if hasattr(a, "photos") and a.photos and len(a.photos) > 0
-         else url_for('static', filename='assets/placeholder.png', _external=True),
-
+            "image": a.photos[0] if a.photos and len(a.photos) > 0 and a.photos[0].startswith('http')
+                     else url_for('static', filename=f"uploads/{a.photos[0]}", _external=True)
+                     if a.photos and len(a.photos) > 0
+                     else url_for('static', filename='assets/placeholder.png', _external=True),
             "valid": a.status in ["approved", "validated"],
             "status": a.status
         }
-        for a in user.articles  # <- ici on utilise l'instance `user`
+        for a in user.articles
         if a.status in ["pending", "approved", "validated"]
     ]
 
-    # Achats réalisés par l'utilisateur
     achats = [
         {
             "title": p.article.title if p.article else "Article supprimé",
-            "image": url_for('static', filename=f"uploads/{p.article.photos[0]}", _external=True)
-                     if p.article and hasattr(p.article, "photos") and p.article.photos
+            "image": p.article.photos[0] if p.article and p.article.photos and len(p.article.photos) > 0 and p.article.photos[0].startswith('http')
+                     else url_for('static', filename=f"uploads/{p.article.photos[0]}", _external=True)
+                     if p.article and p.article.photos and len(p.article.photos) > 0
                      else url_for('static', filename='assets/placeholder.png', _external=True),
             "prix": p.article.price if p.article else 0
         }
-        for p in user.purchases  # <- instance `user`
+        for p in user.purchases
     ]
 
-    # Cotisations de l'utilisateur
     cotisations = [
         {
             "first_name": c.user.first_name,
@@ -754,11 +711,8 @@ def get_profile_data():
         "cotisations": cotisations
     })
 
-
-# Dépôt
 @app.route('/api/deposit', methods=['POST'])
 @jwt_required()
-
 def deposit():
     user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
@@ -776,18 +730,12 @@ def deposit():
     db.session.commit()
     return jsonify({"message":"Dépôt enregistré, en attente de validation admin."}),200
 
-
-#recharger le compte 
-
 @app.route("/api/user_balance/<int:user_id>", methods=["GET"])
 def get_user_balance(user_id):
     user = User.query.get_or_404(user_id)
-
-    # On recalcule le solde dynamiquement
     cotisations_validees = Cotisation.query.filter_by(user_id=user_id, statut="validee").all()
     total = sum([c.montant_recu for c in cotisations_validees if c.montant_recu])
 
-    # On peut aussi stocker ce total dans le champ balance si tu veux
     user.balance = total
     db.session.commit()
 
@@ -795,17 +743,6 @@ def get_user_balance(user_id):
         "user_id": user.id,
         "balance": total
     })
-
-
-
-
-
-
-
-
-
-# ----- ROUTE SELL -----
-
 
 @app.route('/api/sell', methods=['POST'])
 @jwt_required()
@@ -821,13 +758,30 @@ def sell():
     if not title or not price:
         return jsonify({"error": "Titre et prix obligatoires"}), 422
 
-    photos_filenames = []
+    photos_urls = []
+    
     if 'photos' in request.files:
         for file in request.files.getlist('photos'):
-            filename = secure_filename(file.filename)
-            timestamped_name = f"{datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}-{filename}"
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], timestamped_name))
-            photos_filenames.append(timestamped_name)
+            if file and allowed_file(file.filename):
+                try:
+                    # Upload vers Cloudinary
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="izrussia/articles",
+                        quality="auto:good",
+                        width=800,
+                        crop="limit"
+                    )
+                    photos_urls.append(upload_result['secure_url'])
+                    print(f"✅ Image uploadée vers Cloudinary: {upload_result['secure_url']}")
+                    
+                except Exception as e:
+                    print(f"❌ Erreur Cloudinary, fallback local: {e}")
+                    # Fallback: sauvegarde locale
+                    filename = secure_filename(file.filename)
+                    timestamped_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], timestamped_name))
+                    photos_urls.append(timestamped_name)
 
     # Création de l'article
     article = Article(
@@ -837,14 +791,11 @@ def sell():
         category=category,
         city=city,
         description=description,
-        photos=photos_filenames,
+        photos=photos_urls,
         status="pending"
     )
     db.session.add(article)
     db.session.commit()
-
-    # Retourne les URLs complètes
-    photos_urls = [url_for('static', filename=f'uploads/{f}', _external=True) for f in photos_filenames]
 
     return jsonify({
         "message": "Article ajouté avec succès",
@@ -856,12 +807,6 @@ def sell():
         }
     }), 201
 
-
-
-
-
-
-
 @app.route('/dashboard')
 @jwt_required()
 def dashboard_page1():
@@ -869,14 +814,22 @@ def dashboard_page1():
     current_user = User.query.get(user_id)
     user_first_name = current_user.first_name if current_user else "Utilisateur"
 
-    # Récupérer tous les articles approuvés ou validés
     articles = Article.query.filter(Article.status.in_(["approved", "validated"])) \
                             .order_by(Article.created_at.desc()).all()
 
-    # Préparer les données des articles pour le template
     articles_data = []
     for a in articles:
-        photos_urls = [url_for('static', filename=f'uploads/{f}') for f in a.photos] if a.photos else [url_for('static', filename='assets/placeholder.png')]
+        # Gestion des URLs d'images
+        photos_urls = []
+        if a.photos and isinstance(a.photos, list):
+            for f in a.photos:
+                if isinstance(f, str) and f.startswith('http'):
+                    photos_urls.append(f)  # URL Cloudinary
+                else:
+                    photos_urls.append(url_for('static', filename=f'uploads/{f}'))  # URL locale
+        
+        if not photos_urls:
+            photos_urls = [url_for('static', filename='assets/placeholder.png')]
 
         articles_data.append({
             "id": a.id,
@@ -892,14 +845,10 @@ def dashboard_page1():
             "status": a.status
         })
 
-    # DEBUG rapide
     print(f"Articles affichés sur dashboard: {len(articles_data)}")
-
     return render_template('Dashboard.html', user_first_name=user_first_name, articles=articles_data, active='dashboard')
 
 app.register_blueprint(sell_bp)
-
-#cinetpay
 
 @app.route("/api/create_payment", methods=["POST"])
 @jwt_required()
@@ -927,11 +876,9 @@ def valider_cotisation(cot_id):
     if not user:
         return jsonify({"error": "Utilisateur introuvable"}), 404
 
-    # Vérifie que le solde n’est pas None
     if user.balance is None:
         user.balance = 0.0
 
-    # Incrémente le solde directement
     user.balance += float(cot.montant_recu or 0)
     cot.statut = "valide"
 
@@ -942,11 +889,6 @@ def valider_cotisation(cot_id):
         "nouveau_solde": user.balance
     }), 200
 
-
-
-
-
-
 @app.route("/api/inbox/<int:user_id>", methods=["GET"])
 @jwt_required()
 def get_inbox(user_id):
@@ -954,7 +896,6 @@ def get_inbox(user_id):
     if current_id != user_id:
         return jsonify({"error": "Accès non autorisé"}), 403
 
-    # Récupère les conversations où l’utilisateur est impliqué
     messages = Message.query.filter(
         (Message.sender_id == user_id) | (Message.receiver_id == user_id)
     ).all()
@@ -962,7 +903,6 @@ def get_inbox(user_id):
     if not messages:
         return jsonify([])
 
-    # Liste des interlocuteurs uniques
     interlocuteurs_ids = set()
     for m in messages:
         if m.sender_id != user_id:
@@ -985,7 +925,6 @@ def get_inbox(user_id):
 
     return jsonify(result)
 
-
 @app.route("/api/messages", methods=["POST"])
 @jwt_required()
 def post_message():
@@ -998,7 +937,6 @@ def post_message():
     if not receiver_id or not article_id or not content:
         return jsonify({"error": "receiver_id, article_id et content sont requis"}), 400
 
-    # Vérification existences
     article = Article.query.get(article_id)
     if not article:
         return jsonify({"error": "Article inexistant"}), 404
@@ -1007,7 +945,6 @@ def post_message():
     if not receiver:
         return jsonify({"error": "Utilisateur destinataire inexistant"}), 404
 
-    # Création du message
     msg = Message(
         sender_id=user_id,
         receiver_id=receiver_id,
@@ -1029,15 +966,12 @@ def post_message():
         "sender_name": f"{sender_user.first_name} {sender_user.last_name}"
     }
 
-    # Émission Socket.IO
     room = f"chat_{min(user_id, receiver_id)}_{max(user_id, receiver_id)}_{article_id}"
     socketio.emit("receive_message", response, room=room)
 
     return jsonify(response), 201
 
-
 # ------------------- SOCKET.IO -------------------
-# -- SOCKET.IO CHAT
 @socketio.on('join')
 def join(data):
     sender = data.get('userId')
@@ -1053,7 +987,6 @@ def join(data):
     print(f"✅ Utilisateur {sender} a rejoint la room : {room}")
     emit('status', {'msg': f"Utilisateur {sender} a rejoint le chat."}, room=room)
 
-
 @socketio.on('send_message')
 def handle_message(data):
     room = f"chat_{min(data['sender_id'], data['receiver_id'])}_{max(data['sender_id'], data['receiver_id'])}_{data.get('article_id','0')}"
@@ -1064,14 +997,11 @@ def handle_message(data):
         "id": msg.id,"sender_id": msg.sender_id,"receiver_id": msg.receiver_id,"content": msg.content,"timestamp": str(msg.timestamp)
     }, room=room)
 
-
-
 @app.route('/api/conversations', methods=['GET'])
 @jwt_required()
 def get_conversations():
     user_id = int(get_jwt_identity())
 
-    # On récupère tous les messages où l'utilisateur est concerné
     messages = Message.query.filter(
         (Message.sender_id == user_id) | (Message.receiver_id == user_id)
     ).order_by(Message.timestamp.desc()).all()
@@ -1081,21 +1011,19 @@ def get_conversations():
     for msg in messages:
         other_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
         article_id = msg.article_id or 0
-        key = f"{other_id}_{article_id}"  # ✅ chaque article crée une conversation unique
+        key = f"{other_id}_{article_id}"
 
-        # On s’assure que l’autre utilisateur existe
         other_user = User.query.get(other_id)
         if not other_user:
-            continue  # ⛔ Si l’autre utilisateur a été supprimé, on saute
+            continue
 
-        # On récupère l’image du produit concerné
         article = Article.query.get(article_id) if article_id else None
         if article and article.photos and len(article.photos) > 0:
-            article_image = url_for('static', filename=f"uploads/{article.photos[0]}", _external=True)
+            # Utiliser l'URL Cloudinary directement
+            article_image = article.photos[0] if article.photos[0].startswith('http') else url_for('static', filename=f"uploads/{article.photos[0]}", _external=True)
         else:
             article_image = url_for('static', filename='assets/placeholder.png', _external=True)
 
-        # Si la conversation n’est pas encore enregistrée, on la crée
         if key not in conversations:
             conversations[key] = {
                 "peer_id": other_id,
@@ -1108,14 +1036,10 @@ def get_conversations():
                 "unread": 0
             }
 
-        # Incrément des messages non lus
         if msg.receiver_id == user_id and not msg.read:
             conversations[key]["unread"] += 1
 
     return jsonify(list(conversations.values()))
-
-
-#pour compter les messages non lu
 
 @app.route("/api/unread_count")
 @jwt_required()
@@ -1124,9 +1048,6 @@ def unread_count():
     count = Message.query.filter_by(receiver_id=user_id, read=False).count()
     return jsonify({"count": count})
 
-
-
-# Marquer les messages comme lus pour une conversation
 @app.route('/api/mark_read/<int:peer_id>', methods=['POST'])
 @jwt_required()
 def mark_read(peer_id):
@@ -1147,7 +1068,6 @@ def get_messages(peer_id):
         ((Message.sender_id == peer_id) & (Message.receiver_id == user_id))
     ).order_by(Message.timestamp.asc()).all()
     
-    # Marquer les messages reçus comme lus
     for m in messages:
         if m.receiver_id == user_id and not m.read:
             m.read = True
@@ -1164,9 +1084,7 @@ def get_messages(peer_id):
             "read": m.read
         } for m in messages
     ])
-#POUR ENREGISTRER ET MODIFIER DEPUIS MON DASHBOARD ADMIN 
 
-# --- USERS ---
 @app.route("/api/admin/user/<int:user_id>/<action>", methods=["POST"])
 @jwt_required()
 def admin_user_action(user_id, action):
@@ -1195,7 +1113,6 @@ def update_user(user_id):
     db.session.commit()
     return jsonify({"message": "Utilisateur mis à jour avec succès."}), 200
 
-# --- ARTICLES ---
 @app.route("/api/admin/article/<int:article_id>/<action>", methods=["POST"])
 @jwt_required()
 def admin_article_action(article_id, action):
@@ -1221,18 +1138,15 @@ def update_article(article_id):
     db.session.commit()
     return jsonify({"message": "Article mis à jour avec succès."}), 200
 
-
-# Route admin pour gérer les cotisations
 @app.route('/api/admin/cotisation/<int:id>/<string:action>', methods=['POST'])
 @jwt_required()
 def admin_cotisation_action2(id, action):
-    admin_email = get_jwt_identity()  # email de l'admin
+    admin_email = get_jwt_identity()
     cot = Cotisation.query.get(id)
 
     if not cot:
         return jsonify({"message": "Cotisation introuvable"}), 404
 
-    # Gestion des actions
     if action == "approve":
         cot.statut = "approuvée"
         db.session.commit()
@@ -1250,25 +1164,22 @@ def admin_cotisation_action2(id, action):
 
     else:
         return jsonify({"message": "Action invalide"}), 400
+
 # ---------------- RUN ----------------
 with app.app_context():
     db.create_all()
     print("✅ Toutes les tables ont été créées avec succès !")
 
 if __name__ == "__main__":
-    # --- Initialisation de la base avant le premier lancement ---
     with app.app_context():
         try:
-            # Configuration DB pour Railway
             if os.environ.get('DATABASE_URL'):
                 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
                 print("🔗 Utilisation de DATABASE_URL de Railway")
             
-            # Vérifiez la configuration DB
             print(f"📡 DATABASE_URL: {os.environ.get('DATABASE_URL', 'Non défini')}")
             print(f"🔧 SQLALCHEMY_DATABASE_URI: {app.config.get('SQLALCHEMY_DATABASE_URI', 'Non défini')}")
 
-            # Testez la connexion
             try:
                 with db.engine.connect() as conn:
                     print("✅ Connexion DB réussie")
@@ -1276,18 +1187,15 @@ if __name__ == "__main__":
                 print(f"❌ Erreur connexion DB: {e}")
                 raise
 
-            # Création des tables
             print("🔄 Création des tables...")
             db.create_all()
             print("✅ Base de données initialisée.")
 
-            # Vérifiez si les tables existent
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             print(f"📋 Tables disponibles: {tables}")
 
-            # --- Création automatique d'un compte admin "caché" si absent ---
             admin_email = "pythamoua@gmail.com"
             admin = User.query.filter_by(email=admin_email).first()
             if not admin:
@@ -1309,7 +1217,6 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"❌ Erreur lors de l'initialisation: {e}")
 
-    # --- Démarrage du serveur Flask + SocketIO ---
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Démarrage du serveur sur le port {port}")
     socketio.run(app, host="0.0.0.0", port=port)
