@@ -18,10 +18,7 @@ from flask_socketio import SocketIO, emit, join_room
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from backend.config import Config
-from flask import Flask
-from .extensions import db
-from backend.model import Cotisation
-from backend.admin_routes import admin_bp
+
 # ---------------- CONFIG ----------------
 
 
@@ -122,6 +119,34 @@ class User(db.Model):
         }
 
 
+class Cotisation(db.Model):
+    __tablename__ = "cotisations"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Relation avec l'utilisateur
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    
+    # Montants envoyés et reçus
+    montant_envoye = db.Column(db.Float, nullable=False)
+    montant_recu = db.Column(db.Float, nullable=False)
+    
+    # Statut de la cotisation (ex: en_attente, validée, refusée)
+    statut = db.Column(db.String(20), default="en_attente")
+    
+    # Date de la cotisation
+    date_cotisation = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_name": f"{self.user.first_name} {self.user.last_name}" if self.user else "-",
+            "montant_envoye": self.montant_envoye,
+            "montant_recu": self.montant_recu,
+            "statut": self.statut,
+            "date_cotisation": self.date_cotisation.strftime("%Y-%m-%d %H:%M:%S")
+        }
 
 
 
@@ -1179,6 +1204,34 @@ def update_article(article_id):
 
 app.register_blueprint(admin_bp)
 
+
+@admin_bp.route('/api/admin/cotisation/<int:id>/<string:action>', methods=['POST'])
+@jwt_required()
+def admin_cotisation_action(id, action):
+    admin_email = get_jwt_identity()
+    cot = Cotisation.query.get(id)
+
+    if not cot:
+        return jsonify({"message": "Cotisation introuvable"}), 404
+
+    # Gestion des actions
+    if action == "approve":
+        cot.statut = "approuvée"
+        db.session.commit()
+        return jsonify({"message": f"Cotisation #{id} approuvée avec succès"}), 200
+
+    elif action == "confirm":
+        cot.statut = "confirmée"
+        db.session.commit()
+        return jsonify({"message": f"Cotisation #{id} confirmée avec succès"}), 200
+
+    elif action == "delete":
+        db.session.delete(cot)
+        db.session.commit()
+        return jsonify({"message": f"Cotisation #{id} supprimée"}), 200
+
+    else:
+        return jsonify({"message": "Action invalide"}), 400
 
 # ---------------- RUN ----------------
 with app.app_context():
